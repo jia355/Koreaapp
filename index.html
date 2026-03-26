@@ -1,0 +1,1386 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>韓文練習</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=Noto+Sans+TC:wght@400;700;900&display=swap');
+    body { font-family: 'Noto Sans TC','Noto Sans KR',sans-serif; background:#f8fafc; }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+    .fade-up { animation: fadeUp .22s ease-out both; }
+    @keyframes pop { 0%{transform:scale(1)} 40%{transform:scale(1.06)} 100%{transform:scale(1)} }
+    .btn-pop:active { animation: pop .15s ease-out; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+/* ====================================================================
+   資料庫 — 每課包含 vocab（單字）與 sentences（句子填空）
+   vocab:     { korean, chinese, ex }   ex = "韓文例句 / 中文翻譯"
+   sentences: { sentence, answer, hint, translation }
+   ==================================================================== */
+const LESSONS = [
+ {
+  id:"K1A2", title:"K1A2", subtitle:"생활용품 · 生活用品",
+  desc:"N이에요/예요",
+  color:"from-rose-400 to-pink-500",
+  vocab:[
+   {korean:"책",      chinese:"書",       ex:"책을 읽어요. / 我讀書。"},
+   {korean:"가방",    chinese:"包包",     ex:"가방이 무거워요. / 包包很重。"},
+   {korean:"핸드폰",  chinese:"手機",     ex:"핸드폰이 없어요. / 沒有手機。"},
+   {korean:"시계",    chinese:"時鐘/手錶",ex:"시계가 예뻐요. / 時鐘很漂亮。"},
+   {korean:"노트",    chinese:"筆記本",   ex:"노트에 써요. / 寫在筆記本上。"},
+   {korean:"지우개",  chinese:"橡皮擦",   ex:"지우개 주세요. / 請給我橡皮擦。"},
+   {korean:"연필",    chinese:"鉛筆",     ex:"연필로 써요. / 用鉛筆寫。"},
+   {korean:"볼펜",    chinese:"原子筆",   ex:"볼펜이 있어요. / 有原子筆。"},
+   {korean:"컴퓨터",  chinese:"電腦",     ex:"컴퓨터로 일해요. / 用電腦工作。"},
+   {korean:"의자",    chinese:"椅子",     ex:"의자에 앉아요. / 坐在椅子上。"},
+   {korean:"책상",    chinese:"書桌",     ex:"책상이 커요. / 書桌很大。"},
+   {korean:"칠판",    chinese:"黑板",     ex:"칠판을 봐요. / 看黑板。"},
+   {korean:"교실",    chinese:"教室",     ex:"교실이 넓어요. / 教室很寬敞。"},
+   {korean:"학교",    chinese:"學校",     ex:"학교에 가요. / 去學校。"},
+   {korean:"도서관",  chinese:"圖書館",   ex:"도서관에서 공부해요. / 在圖書館讀書。"},
+   {korean:"식당",    chinese:"餐廳",     ex:"식당에서 먹어요. / 在餐廳吃飯。"},
+   {korean:"병원",    chinese:"醫院",     ex:"병원에 가요. / 去醫院。"},
+   {korean:"은행",    chinese:"銀行",     ex:"은행에서 일해요. / 在銀行工作。"},
+   {korean:"편의점",  chinese:"便利商店", ex:"편의점에서 사요. / 在便利商店買。"},
+   {korean:"카페",    chinese:"咖啡廳",   ex:"카페에서 커피를 마셔요. / 在咖啡廳喝咖啡。"},
+   {korean:"우산",    chinese:"雨傘",     ex:"우산이 있어요. / 有雨傘。"},
+   {korean:"지갑",    chinese:"錢包",     ex:"지갑을 잃어버렸어요. / 錢包不見了。"},
+   {korean:"열쇠",    chinese:"鑰匙",     ex:"열쇠가 어디 있어요? / 鑰匙在哪裡？"},
+   {korean:"화장실",  chinese:"廁所",     ex:"화장실이 어디예요? / 廁所在哪裡？"},
+   {korean:"수첩",    chinese:"隨身記事本",ex:"수첩에 씁니다. / 寫在記事本上。"},
+   {korean:"형광펜",  chinese:"螢光筆",   ex:"형광펜으로 표시해요. / 用螢光筆標記。"},
+  ],
+  sentences:[
+   {sentence:"이것은 책___.",     answer:"이에요", hint:"책(子音結尾)→이에요",   translation:"這是書。"},
+   {sentence:"저것은 가방___.",   answer:"이에요", hint:"가방(子音結尾)→이에요", translation:"那是包包。"},
+   {sentence:"이것은 핸드폰___.", answer:"이에요", hint:"핸드폰(子音結尾)→이에요",translation:"這是手機。"},
+   {sentence:"저것은 카페___.",   answer:"예요",   hint:"카페(母音結尾)→예요",   translation:"那是咖啡廳。"},
+   {sentence:"이곳은 학교___.",   answer:"예요",   hint:"학교(母音結尾)→예요",   translation:"這裡是學校。"},
+   {sentence:"저것은 연필___.",   answer:"이에요", hint:"연필(子音結尾)→이에요", translation:"那是鉛筆。"},
+   {sentence:"이것은 시계___.",   answer:"예요",   hint:"시계(母音結尾)→예요",   translation:"這是時鐘。"},
+   {sentence:"저것은 우산___.",   answer:"이에요", hint:"우산(子音結尾)→이에요", translation:"那是雨傘。"},
+   {sentence:"이것은 지갑___.",   answer:"이에요", hint:"지갑(子音結尾)→이에요", translation:"這是錢包。"},
+   {sentence:"저곳은 화장실___.", answer:"이에요", hint:"화장실(子音結尾)→이에요",translation:"那裡是廁所。"},
+  ],
+  grammar:[
+   {
+    name:"N은/는 N이에요/예요",
+    tag:"A是B",
+    exp:"韓文最基本句型：「A 是 B」。述語（이에요/예요）和主題助詞（은/는）都依前面的字有無尾音來選擇。",
+    rules:["N 有尾音 → N은 ／ N이에요","N 無尾音 → N는 ／ N예요","疑問句：語調上揚即可，不需另外加助詞"],
+    ex:[
+     {k:"이것은 책이에요.",   c:"這是書。",
+      w:[{w:"이것",m:"這個"},{w:"은",m:"〔主題〕"},{w:"책",m:"書"},{w:"이에요",m:"是"}]},
+     {k:"저는 학생이에요.",   c:"我是學生。",
+      w:[{w:"저",m:"我"},{w:"는",m:"〔主題〕"},{w:"학생",m:"學生"},{w:"이에요",m:"是"}]},
+     {k:"저것은 카페예요.",   c:"那是咖啡廳。",
+      w:[{w:"저것",m:"那個"},{w:"은",m:"〔主題〕"},{w:"카페",m:"咖啡廳"},{w:"예요",m:"是"}]},
+    ]
+   },
+  ],
+ },
+ {
+  id:"K1A3", title:"K1A3", subtitle:"동사 · 動詞",
+  desc:"V아/어요",
+  color:"from-orange-400 to-amber-500",
+  vocab:[
+   {korean:"먹다",     chinese:"吃",         ex:"밥을 먹어요. / 吃飯。"},
+   {korean:"마시다",   chinese:"喝",         ex:"물을 마셔요. / 喝水。"},
+   {korean:"읽다",     chinese:"閱讀",       ex:"책을 읽어요. / 讀書。"},
+   {korean:"보다",     chinese:"看",         ex:"TV를 봐요. / 看電視。"},
+   {korean:"듣다",     chinese:"聽",         ex:"음악을 들어요. / 聽音樂。"},
+   {korean:"쓰다",     chinese:"寫",         ex:"편지를 써요. / 寫信。"},
+   {korean:"운동하다", chinese:"運動",       ex:"매일 운동해요. / 每天運動。"},
+   {korean:"공부하다", chinese:"學習",       ex:"한국어를 공부해요. / 學韓文。"},
+   {korean:"일하다",   chinese:"工作",       ex:"회사에서 일해요. / 在公司工作。"},
+   {korean:"사다",     chinese:"買",         ex:"옷을 사요. / 買衣服。"},
+   {korean:"만나다",   chinese:"見面",       ex:"친구를 만나요. / 見朋友。"},
+   {korean:"가다",     chinese:"去",         ex:"학교에 가요. / 去學校。"},
+   {korean:"오다",     chinese:"來",         ex:"집에 와요. / 回家。"},
+   {korean:"자다",     chinese:"睡覺",       ex:"일찍 자요. / 早點睡。"},
+   {korean:"일어나다", chinese:"起床",       ex:"아침에 일어나요. / 早上起床。"},
+   {korean:"씻다",     chinese:"洗漱",       ex:"손을 씻어요. / 洗手。"},
+   {korean:"요리하다", chinese:"料理",       ex:"저녁을 요리해요. / 做晚餐。"},
+   {korean:"전화하다", chinese:"打電話",     ex:"친구에게 전화해요. / 打電話給朋友。"},
+   {korean:"배우다",   chinese:"學習/學",   ex:"한국어를 배워요. / 學韓文。"},
+   {korean:"놀다",     chinese:"玩耍",       ex:"친구와 놀아요. / 和朋友玩。"},
+   {korean:"쉬다",     chinese:"休息",       ex:"집에서 쉬어요. / 在家休息。"},
+   {korean:"타다",     chinese:"搭乘/騎",   ex:"버스를 타요. / 搭公車。"},
+   {korean:"팔다",     chinese:"賣",         ex:"과일을 팔아요. / 賣水果。"},
+   {korean:"닫다",     chinese:"關（規則）",ex:"문을 닫아요. / 關門。"},
+  ],
+  sentences:[
+   {sentence:"저는 밥을 먹___.",       answer:"어요", hint:"먹다(ㅓ語幹)→먹어요",        translation:"我吃飯。"},
+   {sentence:"친구를 만나___.",        answer:"요",   hint:"만나다(ㅏ語幹)→만나요",       translation:"見朋友。"},
+   {sentence:"도서관에서 책을 읽___.", answer:"어요", hint:"읽다(ㄱ尾音)→읽어요",        translation:"在圖書館讀書。"},
+   {sentence:"커피를 마시___.",        answer:"어요", hint:"마시다(ㅣ語幹)→마셔요",       translation:"喝咖啡。"},
+   {sentence:"공원에 가___.",          answer:"요",   hint:"가다(ㅏ語幹)→가요",           translation:"去公園。"},
+   {sentence:"집에서 공부하___.",      answer:"여요", hint:"공부하다→공부해요(하→해)",    translation:"在家讀書。"},
+   {sentence:"음악을 들___.",          answer:"어요", hint:"듣다→들어요（ㄷ불규칙）",     translation:"聽音樂。"},
+   {sentence:"한국어를 배우___.",      answer:"어요", hint:"배우다(ㅜ語幹)→배워요",       translation:"學韓文。"},
+   {sentence:"버스를 타___.",          answer:"요",   hint:"타다(ㅏ語幹)→타요",           translation:"搭公車。"},
+   {sentence:"집에서 쉬___.",          answer:"어요", hint:"쉬다(ㅣ語幹)→쉬어요",         translation:"在家休息。"},
+  ],
+  grammar:[
+   {
+    name:"N을/를 V아/어요",
+    tag:"動詞現在式",
+    exp:"韓文動詞現在式：去掉語幹末的「다」，依最後一個母音決定接「아요」或「어요」。同時注意縮音變化：ㅏ+아→아、ㅗ+아→와、ㅣ/ㅜ+어→여/워。",
+    rules:["語幹末母音 ㅏ/ㅗ → +아요 （가다→가요、오다→와요）","其他母音 → +어요 （먹다→먹어요、읽다→읽어요）","하다 → 해요 （공부하다→공부해요）","縮音：마시다(ㅣ)→마셔요、배우다(ㅜ)→배워요","目的語助詞：有尾音→을 ／ 無尾音→를"],
+    ex:[
+     {k:"저는 밥을 먹어요.",    c:"我吃飯。",
+      w:[{w:"저",m:"我"},{w:"는",m:"〔主題〕"},{w:"밥",m:"飯"},{w:"을",m:"〔受詞〕"},{w:"먹어요",m:"吃"}]},
+     {k:"음악을 들어요.",       c:"聽音樂。",
+      w:[{w:"음악",m:"音樂"},{w:"을",m:"〔受詞〕"},{w:"들어요",m:"聽（ㄷ불규칙）"}]},
+     {k:"한국어를 공부해요.",   c:"學韓文。",
+      w:[{w:"한국어",m:"韓文"},{w:"를",m:"〔受詞〕"},{w:"공부해요",m:"學習"}]},
+    ]
+   },
+  ],
+ },
+ {
+  id:"K1A4", title:"K1A4", subtitle:"형용사 · 形容詞",
+  desc:"A아/어요",
+  color:"from-yellow-400 to-lime-500",
+  vocab:[
+   {korean:"맛있다",   chinese:"好吃",   ex:"이 음식이 맛있어요. / 這食物好吃。"},
+   {korean:"맛없다",   chinese:"不好吃", ex:"이 음식이 맛없어요. / 這食物不好吃。"},
+   {korean:"예쁘다",   chinese:"漂亮",   ex:"꽃이 예뻐요. / 花很漂亮。"},
+   {korean:"멋있다",   chinese:"帥/酷",  ex:"옷이 멋있어요. / 衣服很酷。"},
+   {korean:"좋다",     chinese:"好/喜歡",ex:"날씨가 좋아요. / 天氣很好。"},
+   {korean:"싫다",     chinese:"討厭",   ex:"숙제가 싫어요. / 討厭作業。"},
+   {korean:"크다",     chinese:"大",     ex:"집이 커요. / 房子很大。"},
+   {korean:"작다",     chinese:"小",     ex:"강아지가 작아요. / 狗狗很小。"},
+   {korean:"많다",     chinese:"多",     ex:"사람이 많아요. / 人很多。"},
+   {korean:"적다",     chinese:"少",     ex:"시간이 적어요. / 時間很少。"},
+   {korean:"비싸다",   chinese:"貴",     ex:"이 옷이 비싸요. / 這衣服很貴。"},
+   {korean:"싸다",     chinese:"便宜",   ex:"이 가방이 싸요. / 這包包很便宜。"},
+   {korean:"바쁘다",   chinese:"忙",     ex:"요즘 바빠요. / 最近很忙。"},
+   {korean:"피곤하다", chinese:"累",     ex:"오늘 피곤해요. / 今天很累。"},
+   {korean:"재미있다", chinese:"有趣",   ex:"한국어가 재미있어요. / 韓文很有趣。"},
+   {korean:"재미없다", chinese:"無聊",     ex:"이 영화가 재미없어요. / 這電影很無聊。"},
+   {korean:"어렵다",   chinese:"難",       ex:"시험이 어려워요. / 考試很難。（ㅂ불규칙）"},
+   {korean:"쉽다",     chinese:"簡單",     ex:"문제가 쉬워요. / 問題很簡單。（ㅂ불규칙）"},
+   {korean:"건강하다", chinese:"健康",     ex:"할아버지가 건강해요. / 爺爺很健康。"},
+   {korean:"친절하다", chinese:"親切",     ex:"선생님이 친절해요. / 老師很親切。"},
+   {korean:"행복하다", chinese:"幸福",     ex:"요즘 행복해요. / 最近很幸福。"},
+   {korean:"조용하다", chinese:"安靜",     ex:"도서관이 조용해요. / 圖書館很安靜。"},
+   {korean:"복잡하다", chinese:"複雜/擁擠",ex:"지하철이 복잡해요. / 地鐵很擁擠。"},
+   {korean:"따뜻하다", chinese:"溫暖",     ex:"날씨가 따뜻해요. / 天氣溫暖。"},
+   {korean:"시원하다", chinese:"涼爽",     ex:"바람이 시원해요. / 風很涼爽。"},
+  ],
+  sentences:[
+   {sentence:"이 음식이 맛있___.",    answer:"어요", hint:"맛있다→맛있어요（있+어요）",    translation:"這食物很好吃。"},
+   {sentence:"한국어가 재미있___.",   answer:"어요", hint:"재미있다→재미있어요",            translation:"韓文很有趣。"},
+   {sentence:"이 옷이 비싸___.",      answer:"요",   hint:"비싸다(ㅏ語幹)→비싸요",         translation:"這衣服很貴。"},
+   {sentence:"오늘 날씨가 좋___.",    answer:"아요", hint:"좋다(ㅗ語幹)→좋아요",           translation:"今天天氣很好。"},
+   {sentence:"이 책이 어렵___.",      answer:"어요", hint:"어렵다→어려워요（ㅂ불규칙）",    translation:"這書很難。"},
+   {sentence:"요즘 많이 바쁘___.",    answer:"어요", hint:"바쁘다→바빠요（으탈락）",        translation:"最近很忙。"},
+   {sentence:"문제가 쉬___.",         answer:"워요", hint:"쉽다→쉬워요（ㅂ불규칙）",        translation:"問題很簡單。"},
+   {sentence:"도서관이 조용하___.",   answer:"여요", hint:"조용하다→조용해요",              translation:"圖書館很安靜。"},
+   {sentence:"선생님이 친절하___.",   answer:"여요", hint:"친절하다→친절해요",              translation:"老師很親切。"},
+  ],
+  grammar:[
+   {
+    name:"N이/가 A아/어요",
+    tag:"形容詞現在式",
+    exp:"形容詞活用方式與動詞相同，但常見兩種不規則變化：①ㅂ不規則：語幹末ㅂ → 刪ㅂ + 워요；②으脫落：語幹末으 → 刪으 + 아/어요。",
+    rules:["主語助詞：有尾音→이 ／ 無尾音→가","ㅂ불규칙：語幹末ㅂ → 워요 （춥다→추워요、맵다→매워요）","으탈락：語幹末으 → 删으+아/어요 （바쁘다→바빠요、예쁘다→예뻐요）"],
+    ex:[
+     {k:"이 음식이 맛있어요.", c:"這食物很好吃。",
+      w:[{w:"이",m:"這"},{w:"음식",m:"食物"},{w:"이",m:"〔主語〕"},{w:"맛있어요",m:"好吃"}]},
+     {k:"이 문제가 쉬워요.", c:"這問題很簡單。",
+      w:[{w:"이",m:"這"},{w:"문제",m:"問題"},{w:"가",m:"〔主語〕"},{w:"쉬워요",m:"簡單（ㅂ불규칙）"}]},
+     {k:"요즘 많이 바빠요.",   c:"最近很忙。",
+      w:[{w:"요즘",m:"最近"},{w:"많이",m:"很"},{w:"바빠요",m:"忙（으탈락）"}]},
+    ]
+   },
+  ],
+ },
+ {
+  id:"K1A6", title:"K1A6", subtitle:"음식 · 數量詞",
+  desc:"固有數詞 + 量詞",
+  color:"from-green-400 to-teal-500",
+  vocab:[
+   {korean:"비빔밥",   chinese:"拌飯",         ex:"비빔밥 주세요. / 請給我拌飯。"},
+   {korean:"설렁탕",   chinese:"牛骨湯",       ex:"설렁탕이 맛있어요. / 牛骨湯很好喝。"},
+   {korean:"냉면",     chinese:"冷麵",         ex:"냉면을 먹어요. / 吃冷麵。"},
+   {korean:"칼국수",   chinese:"刀削麵",       ex:"칼국수가 좋아요. / 喜歡刀削麵。"},
+   {korean:"라면",     chinese:"泡麵",         ex:"라면을 끓여요. / 煮泡麵。"},
+   {korean:"볶음밥",   chinese:"炒飯",         ex:"볶음밥을 만들어요. / 做炒飯。"},
+   {korean:"김밥",     chinese:"海苔飯捲",     ex:"김밥을 먹어요. / 吃海苔飯捲。"},
+   {korean:"불고기",   chinese:"烤牛肉",       ex:"불고기가 맛있어요. / 烤牛肉很好吃。"},
+   {korean:"삼겹살",   chinese:"五花肉",       ex:"삼겹살을 구워요. / 烤五花肉。"},
+   {korean:"치킨",     chinese:"炸雞",         ex:"치킨을 시켜요. / 叫炸雞外送。"},
+   {korean:"떡볶이",   chinese:"辣炒年糕",     ex:"떡볶이가 매워요. / 辣炒年糕很辣。"},
+   {korean:"하나",     chinese:"一（固有）",   ex:"하나 주세요. / 請給我一個。"},
+   {korean:"둘",       chinese:"二（固有）",   ex:"둘이에요. / 是兩個。"},
+   {korean:"셋",       chinese:"三（固有）",   ex:"셋 있어요. / 有三個。"},
+   {korean:"넷",       chinese:"四（固有）",   ex:"넷 주세요. / 請給我四個。"},
+   {korean:"다섯",     chinese:"五（固有）",   ex:"다섯 개 있어요. / 有五個。"},
+   {korean:"여섯",     chinese:"六（固有）",   ex:"여섯 명이에요. / 是六個人。"},
+   {korean:"일곱",     chinese:"七（固有）",   ex:"일곱 시예요. / 是七點。"},
+   {korean:"여덟",     chinese:"八（固有）",   ex:"여덟 살이에요. / 是八歲。"},
+   {korean:"아홉",     chinese:"九（固有）",   ex:"아홉 개 사요. / 買九個。"},
+   {korean:"열",       chinese:"十（固有）",   ex:"열 명이에요. / 是十個人。"},
+   {korean:"개",       chinese:"個（通用）",   ex:"사과 두 개요. / 兩個蘋果。"},
+   {korean:"병",       chinese:"瓶",           ex:"맥주 한 병이요. / 一瓶啤酒。"},
+   {korean:"잔",       chinese:"杯",           ex:"커피 두 잔이요. / 兩杯咖啡。"},
+   {korean:"그릇",     chinese:"碗",           ex:"밥 한 그릇이요. / 一碗飯。"},
+   {korean:"권",       chinese:"本（書）",     ex:"책 세 권이요. / 三本書。"},
+   {korean:"벌",       chinese:"套（衣服）",   ex:"옷 두 벌이요. / 兩套衣服。"},
+   {korean:"켤레",     chinese:"雙（鞋/襪）", ex:"양말 한 켤레요. / 一雙襪子。"},
+   {korean:"마리",     chinese:"隻（動物）",  ex:"고양이 한 마리요. / 一隻貓。"},
+   {korean:"장",       chinese:"張（紙/票）", ex:"표 두 장 주세요. / 請給我兩張票。"},
+  ],
+  sentences:[
+   {sentence:"비빔밥 두 그릇 주___.",  answer:"세요", hint:"주다→주세요（請給我）",     translation:"請給我兩碗拌飯。"},
+   {sentence:"콜라 세 병 사___.",      answer:"요",   hint:"사다(ㅏ語幹)→사요",         translation:"買三瓶可樂。"},
+   {sentence:"사과 다섯 개 있___.",    answer:"어요", hint:"있다→있어요",                translation:"有五個蘋果。"},
+   {sentence:"김밥하고 라면 먹___.",   answer:"어요", hint:"먹다→먹어요",                translation:"吃海苔飯捲和泡麵。"},
+   {sentence:"치킨 한 마리 시키___.",  answer:"어요", hint:"시키다→시켜요",              translation:"叫一隻炸雞外送。"},
+   {sentence:"커피 두 잔 주___.",      answer:"세요", hint:"주세요（請給）",              translation:"請給我兩杯咖啡。"},
+   {sentence:"라면 세 개 있___.",      answer:"어요", hint:"있다→있어요",                translation:"有三包泡麵。"},
+   {sentence:"사람이 열 명이___.",     answer:"에요", hint:"명（母音결尾）→이에요/예요",  translation:"是十個人。"},
+  ],
+  grammar:[
+   {
+    name:"固有數詞＋量詞",
+    tag:"數量表達",
+    exp:"韓文有兩套數字系統。「數東西、說年齡、說時鐘幾點」用固有數詞（하나、둘、셋…）。固有數詞接量詞時，하나→한、둘→두、셋→세、넷→네。",
+    rules:["하나→한、둘→두、셋→세、넷→네（接量詞時縮略）","다섯~열 不縮略","常見量詞：개（個）、명（人）、잔（杯）、병（瓶）、그릇（碗）、권（本/書）"],
+    ex:[
+     {k:"커피 두 잔 주세요.",  c:"請給我兩杯咖啡。",
+      w:[{w:"커피",m:"咖啡"},{w:"두",m:"兩"},{w:"잔",m:"〔量詞：杯〕"},{w:"주세요",m:"請給"}]},
+     {k:"사과 다섯 개 있어요.", c:"有五個蘋果。",
+      w:[{w:"사과",m:"蘋果"},{w:"다섯",m:"五"},{w:"개",m:"〔量詞：個〕"},{w:"있어요",m:"有"}]},
+     {k:"세 명이에요.",         c:"是三個人。",
+      w:[{w:"세",m:"三"},{w:"명",m:"〔量詞：人〕"},{w:"이에요",m:"是"}]},
+    ]
+   },
+  ],
+ },
+ {
+  id:"K1A7", title:"K1A7", subtitle:"날짜 · 시간",
+  desc:"漢字數詞 + 星期 + 時間",
+  color:"from-teal-400 to-cyan-500",
+  vocab:[
+   {korean:"일",      chinese:"一（漢字）", ex:"일 층이에요. / 是一樓。"},
+   {korean:"이",      chinese:"二（漢字）", ex:"이 월이에요. / 是二月。"},
+   {korean:"삼",      chinese:"三（漢字）", ex:"삼 층이에요. / 是三樓。"},
+   {korean:"사",      chinese:"四（漢字）", ex:"사 월이에요. / 是四月。"},
+   {korean:"오",      chinese:"五（漢字）", ex:"오 분이에요. / 是五分。"},
+   {korean:"육",      chinese:"六（漢字）", ex:"육 층이에요. / 是六樓。"},
+   {korean:"칠",      chinese:"七（漢字）", ex:"칠 월이에요. / 是七月。"},
+   {korean:"팔",      chinese:"八（漢字）", ex:"팔 월이에요. / 是八月。"},
+   {korean:"구",      chinese:"九（漢字）", ex:"구 층이에요. / 是九樓。"},
+   {korean:"십",      chinese:"十（漢字）", ex:"십 분이에요. / 是十分。"},
+   {korean:"백",      chinese:"百",         ex:"백 원이에요. / 是一百元。"},
+   {korean:"천",      chinese:"千",         ex:"천 원이에요. / 是一千元。"},
+   {korean:"만",      chinese:"萬",         ex:"만 원이에요. / 是一萬元。"},
+   {korean:"일요일",  chinese:"星期日",     ex:"일요일에 쉬어요. / 星期日休息。"},
+   {korean:"월요일",  chinese:"星期一",     ex:"월요일에 학교에 가요. / 星期一去學校。"},
+   {korean:"화요일",  chinese:"星期二",     ex:"화요일이에요. / 是星期二。"},
+   {korean:"수요일",  chinese:"星期三",     ex:"수요일에 만나요. / 星期三見面。"},
+   {korean:"목요일",  chinese:"星期四",     ex:"목요일에 시험이에요. / 星期四考試。"},
+   {korean:"금요일",  chinese:"星期五",     ex:"금요일을 좋아해요. / 喜歡星期五。"},
+   {korean:"토요일",  chinese:"星期六",     ex:"토요일에 놀아요. / 星期六玩耍。"},
+   {korean:"어제",    chinese:"昨天",       ex:"어제 뭐 했어요? / 昨天做了什麼？"},
+   {korean:"오늘",    chinese:"今天",       ex:"오늘 바빠요. / 今天很忙。"},
+   {korean:"내일",    chinese:"明天",       ex:"내일 만나요. / 明天見。"},
+   {korean:"지난주",  chinese:"上週",       ex:"지난주에 갔어요. / 上週去了。"},
+   {korean:"이번 주", chinese:"這週",       ex:"이번 주 바빠요. / 這週很忙。"},
+   {korean:"다음 주", chinese:"下週",       ex:"다음 주에 와요. / 下週來。"},
+   {korean:"시",      chinese:"點（時）",   ex:"세 시예요. / 是三點。"},
+   {korean:"분",      chinese:"分",         ex:"십오 분이에요. / 是十五分。"},
+   {korean:"반",      chinese:"半",         ex:"두 시 반이에요. / 是兩點半。"},
+   {korean:"오전",      chinese:"上午",       ex:"오전에 수업이에요. / 上午有課。"},
+   {korean:"오후",      chinese:"下午",       ex:"오후에 만나요. / 下午見。"},
+   {korean:"년",        chinese:"年",         ex:"이천이십오 년이에요. / 是2025年。"},
+   {korean:"월",        chinese:"月",         ex:"삼 월이에요. / 是三月。"},
+   {korean:"일",        chinese:"日（日期）", ex:"십오 일이에요. / 是十五日。"},
+   {korean:"생일",      chinese:"生日",       ex:"생일이 언제예요? / 生日是什麼時候？"},
+   {korean:"언제",      chinese:"什麼時候",   ex:"언제 만나요? / 什麼時候見面？"},
+  ],
+  sentences:[
+   {sentence:"오늘은 무슨 요일___?",     answer:"이에요", hint:"요일(子音尾)→이에요",     translation:"今天是星期幾？"},
+   {sentence:"지금 몇 시___?",           answer:"예요",   hint:"시(母音尾)→예요",          translation:"現在幾點？"},
+   {sentence:"내일은 월요일이___.",      answer:"에요",   hint:"월요일이에요의 縮略",       translation:"明天是星期一。"},
+   {sentence:"수업은 오전 열 시___.",    answer:"예요",   hint:"시(母音尾)→예요",          translation:"課是上午十點。"},
+   {sentence:"오늘은 삼 월 십오 ___이에요.", answer:"일", hint:"날짜：日→일",             translation:"今天是三月十五日。"},
+   {sentence:"생일이 몇 월 며칠___?",   answer:"이에요", hint:"며칠(子音尾)→이에요",      translation:"生日是幾月幾日？"},
+   {sentence:"이번 주 토요일에 만나___.", answer:"요",   hint:"만나다(ㅏ語幹)→만나요",    translation:"這週六見面。"},
+   {sentence:"어제 몇 시에 잤___?",     answer:"어요",   hint:"자다→잤어요（過去）",      translation:"昨天幾點睡的？"},
+  ],
+  grammar:[
+   {
+    name:"漢字數詞＋時間표현",
+    tag:"日期時間",
+    exp:"說「分鐘、月份、年、樓層、價格」時用漢字數詞（일、이、삼…）。說「幾點」時用固有數詞（한 시、두 시…），但「分」用漢字數詞（십오 분）。",
+    rules:["時（시）→ 固有數詞：한 시、두 시…열두 시","分（분）→ 漢字數詞：오 분、십오 분…","月份（월）→ 漢字數詞：일월、이월…십이월","星期：월/화/수/목/금/토/일요일"],
+    ex:[
+     {k:"지금 두 시 반이에요.",   c:"現在是兩點半。",
+      w:[{w:"지금",m:"現在"},{w:"두",m:"兩（固有）"},{w:"시",m:"〔點〕"},{w:"반",m:"半"},{w:"이에요",m:"是"}]},
+     {k:"오늘은 수요일이에요.",   c:"今天是星期三。",
+      w:[{w:"오늘",m:"今天"},{w:"은",m:"〔主題〕"},{w:"수요일",m:"星期三"},{w:"이에요",m:"是"}]},
+     {k:"수업은 오전 열 시예요.", c:"課是上午十點。",
+      w:[{w:"수업",m:"課"},{w:"은",m:"〔主題〕"},{w:"오전",m:"上午"},{w:"열",m:"十（固有）"},{w:"시",m:"〔點〕"},{w:"예요",m:"是"}]},
+    ]
+   },
+  ],
+ },
+ {
+  id:"K1A8", title:"K1A8", subtitle:"일상행동 · 으러",
+  desc:"日常動作 + (으)러 가다/오다",
+  color:"from-cyan-400 to-blue-500",
+  vocab:[
+   {korean:"통장을 만들다",chinese:"開帳戶",   ex:"은행에서 통장을 만들어요. / 在銀行開帳戶。"},
+   {korean:"장을 보다",    chinese:"買菜",     ex:"마트에서 장을 봐요. / 在超市買菜。"},
+   {korean:"입금하다",     chinese:"存款",     ex:"통장에 입금해요. / 存款到帳戶。"},
+   {korean:"이체하다",     chinese:"轉帳",     ex:"친구에게 이체해요. / 轉帳給朋友。"},
+   {korean:"출금하다",     chinese:"提款",     ex:"ATM에서 출금해요. / 在ATM提款。"},
+   {korean:"주문하다",     chinese:"點餐/訂購",ex:"음식을 주문해요. / 點餐。"},
+   {korean:"진료를 받다",  chinese:"看診",     ex:"병원에서 진료를 받아요. / 在醫院看診。"},
+   {korean:"출근하다",     chinese:"上班",     ex:"아침에 출근해요. / 早上上班。"},
+   {korean:"퇴근하다",     chinese:"下班",     ex:"저녁에 퇴근해요. / 傍晚下班。"},
+   {korean:"기다리다",     chinese:"等待",     ex:"버스를 기다려요. / 等公車。"},
+   {korean:"구경하다",     chinese:"參觀/逛",  ex:"시장을 구경해요. / 逛市場。"},
+   {korean:"쇼핑하다",     chinese:"購物",     ex:"명동에서 쇼핑해요. / 在明洞購物。"},
+   {korean:"표를 끊다",    chinese:"買票",     ex:"영화표를 끊어요. / 買電影票。"},
+   {korean:"사진을 찍다",  chinese:"拍照",     ex:"한강에서 사진을 찍어요. / 在漢江拍照。"},
+   {korean:"예약하다",     chinese:"預約",     ex:"식당을 예약해요. / 預約餐廳。"},
+   {korean:"신청하다",     chinese:"申請",       ex:"수업을 신청해요. / 申請課程。"},
+   {korean:"빌리다",       chinese:"借",         ex:"책을 빌려요. / 借書。"},
+   {korean:"보내다",       chinese:"寄送/發送",  ex:"편지를 보내요. / 寄信。"},
+   {korean:"받다",         chinese:"收到",       ex:"선물을 받아요. / 收到禮物。"},
+   {korean:"찾다",         chinese:"找/提領",    ex:"돈을 찾아요. / 提領錢。"},
+   {korean:"마트",         chinese:"超市",       ex:"마트에서 장을 봐요. / 在超市買菜。"},
+  ],
+  sentences:[
+   {sentence:"밥을 먹___ 식당에 가요.",    answer:"으러", hint:"먹다(子音尾)→먹으러",    translation:"為了吃飯去餐廳。"},
+   {sentence:"책을 빌리___ 도서관에 가요.", answer:"러",  hint:"빌리다(母音尾)→빌리러",  translation:"為了借書去圖書館。"},
+   {sentence:"통장을 만들___ 은행에 가요.", answer:"러",  hint:"만들다(ㄹ尾)→만들러",    translation:"為了開帳戶去銀行。"},
+   {sentence:"장을 보___ 마트에 가요.",    answer:"러",   hint:"보다(母音尾)→보러",       translation:"為了買菜去超市。"},
+   {sentence:"진료를 받___ 병원에 가요.",  answer:"으러", hint:"받다(子音尾)→받으러",    translation:"為了看診去醫院。"},
+   {sentence:"사진을 찍___ 한강에 갔어요.", answer:"으러", hint:"찍다(子音尾)→찍으러",   translation:"為了拍照去了漢江。"},
+   {sentence:"돈을 찾___ ATM에 가요.",    answer:"으러", hint:"찾다(子音尾)→찾으러",    translation:"為了提款去ATM。"},
+  ],
+  grammar:[
+   {
+    name:"V（으）러 가다/오다",
+    tag:"目的移動",
+    exp:"表示「為了做某事而去/來」。語幹末有尾音（非ㄹ）→으러；語幹末無尾音或尾音是ㄹ→러。後面固定接 가다、오다、다니다 等移動動詞。",
+    rules:["語幹末 有尾音（非ㄹ）→ 으러 （먹다→먹으러）","語幹末 無尾音 → 러 （마시다→마시러）","語幹末 ㄹ → 러 （만들다→만들러）"],
+    ex:[
+     {k:"밥을 먹으러 식당에 가요.", c:"為了吃飯去餐廳。",
+      w:[{w:"밥",m:"飯"},{w:"을",m:"〔受詞〕"},{w:"먹으러",m:"為了吃（으러）"},{w:"식당",m:"餐廳"},{w:"에",m:"〔方向〕"},{w:"가요",m:"去"}]},
+     {k:"책을 빌리러 도서관에 가요.", c:"為了借書去圖書館。",
+      w:[{w:"책",m:"書"},{w:"을",m:"〔受詞〕"},{w:"빌리러",m:"為了借（러）"},{w:"도서관",m:"圖書館"},{w:"에",m:"〔方向〕"},{w:"가요",m:"去"}]},
+     {k:"통장을 만들러 은행에 가요.", c:"為了開帳戶去銀行。",
+      w:[{w:"통장",m:"帳戶"},{w:"을",m:"〔受詞〕"},{w:"만들러",m:"為了開（ㄹ語幹→러）"},{w:"은행",m:"銀行"},{w:"에",m:"〔方向〕"},{w:"가요",m:"去"}]},
+    ]
+   },
+  ],
+ },
+ {
+  id:"K1A9", title:"K1A9", subtitle:"조사 정리 · 助詞總整理",
+  desc:"은/는 vs 이/가、에 vs 에서、한테",
+  color:"from-sky-400 to-blue-500",
+  vocab:[
+   {korean:"은/는",     chinese:"主題助詞",       ex:"저는 학생이에요. / 我是學生。"},
+   {korean:"이/가",     chinese:"主語助詞",       ex:"고양이가 귀여워요. / 貓咪很可愛。"},
+   {korean:"을/를",     chinese:"目的格助詞",     ex:"밥을 먹어요. / 吃飯。"},
+   {korean:"에",        chinese:"方向/位置助詞",  ex:"학교에 가요. / 去學校。"},
+   {korean:"에서",      chinese:"動作場所助詞",   ex:"학교에서 공부해요. / 在學校讀書。"},
+   {korean:"도",        chinese:"也（添加）",     ex:"저도 가요. / 我也去。"},
+   {korean:"만",        chinese:"只（限定）",     ex:"저만 알아요. / 只有我知道。"},
+   {korean:"한테/에게", chinese:"給/向（人）",    ex:"친구한테 줘요. / 給朋友。"},
+   {korean:"하고",      chinese:"和（口語）",     ex:"친구하고 가요. / 和朋友去。"},
+   {korean:"(으)로",    chinese:"用/往（工具/方向）",ex:"버스로 가요. / 搭公車去。"},
+   {korean:"의",        chinese:"的（所有格）",       ex:"제 친구의 가방이에요. / 是我朋友的包包。"},
+   {korean:"부터",      chinese:"從（起點）",         ex:"지금부터 시작해요. / 從現在開始。"},
+   {korean:"까지",      chinese:"到（終點）",         ex:"집까지 가요. / 去到家。"},
+   {korean:"보다",      chinese:"比（比較）",         ex:"나는 언니보다 키가 커요. / 我比姊姊高。"},
+   {korean:"밖에",      chinese:"只有/除了（否定）",  ex:"돈이 천 원밖에 없어요. / 只剩一千元。"},
+  ],
+  sentences:[
+   {sentence:"저___ 한국어를 공부해요.",      answer:"는",   hint:"저(無尾音)→는（主題）",   translation:"我學韓文。"},
+   {sentence:"지금 누구___ 왔어요?",          answer:"가",   hint:"누구(無尾音)→가（主語）", translation:"現在誰來了？"},
+   {sentence:"도서관___ 공부해요.",           answer:"에서", hint:"動作場所→에서",           translation:"在圖書館讀書。"},
+   {sentence:"학교___ 가요.",                 answer:"에",   hint:"移動方向→에",             translation:"去學校。"},
+   {sentence:"친구___ 선물을 줬어요.",        answer:"한테", hint:"給人方向→한테",           translation:"給了朋友禮物。"},
+   {sentence:"버스___ 학교에 가요.",          answer:"로",   hint:"工具/手段→(으)로",        translation:"搭公車去學校。"},
+   {sentence:"아침___ 저녁까지 공부해요.",    answer:"부터", hint:"起點→부터",               translation:"從早上讀書到晚上。"},
+   {sentence:"이 가방은 저___ 가방이에요.",   answer:"의",   hint:"所有格→의",               translation:"這包包是我的包包。"},
+  ],
+  grammar:[
+   {
+    name:"에 vs 에서",
+    tag:"位置助詞對比",
+    exp:"「에」表示存在的位置或移動的目的地；「에서」表示動作發生的場所。簡單區分：에前面的動詞通常是있다/없다/가다/오다，에서前面的動詞是其他行為動詞。",
+    rules:["N에 있다/없다：在N（存在）","N에 가다/오다：去/來到N（移動目標）","N에서 V：在N做某事（動作場所）"],
+    ex:[
+     {k:"학교에 가요.",         c:"去學校。",
+      w:[{w:"학교",m:"學校"},{w:"에",m:"〔目的地〕"},{w:"가요",m:"去"}]},
+     {k:"학교에서 공부해요.",    c:"在學校讀書。",
+      w:[{w:"학교",m:"學校"},{w:"에서",m:"〔動作場所〕"},{w:"공부해요",m:"讀書"}]},
+     {k:"도서관에 책이 있어요.", c:"圖書館有書。",
+      w:[{w:"도서관",m:"圖書館"},{w:"에",m:"〔存在位置〕"},{w:"책",m:"書"},{w:"이",m:"〔主語〕"},{w:"있어요",m:"有"}]},
+    ]
+   },
+   {
+    name:"은/는 vs 이/가",
+    tag:"主題 vs 主語",
+    exp:"「은/는」是「主題助詞」，用於介紹話題、對比、強調；「이/가」是「主語助詞」，用於首次提到的新資訊、疑問詞答案或描述當下狀態。",
+    rules:["은/는：對比、話題、習慣性事實","이/가：新資訊、疑問詞的答案、當下狀態","有尾音→은/이 ／ 無尾音→는/가"],
+    ex:[
+     {k:"저는 학생이에요.",    c:"我是學生。（介紹自己）",
+      w:[{w:"저",m:"我"},{w:"는",m:"〔主題〕"},{w:"학생",m:"學生"},{w:"이에요",m:"是"}]},
+     {k:"누가 왔어요？ 친구가 왔어요.", c:"誰來了？朋友來了。",
+      w:[{w:"누가",m:"誰〔主語〕"},{w:"왔어요",m:"來了"},{w:"친구",m:"朋友"},{w:"가",m:"〔主語〕"},{w:"왔어요",m:"來了"}]},
+    ]
+   },
+  ],
+ },
+ {
+  id:"K1A10",title:"K1A10",subtitle:"문화 · 인사",
+  desc:"韓國文化 + 존댓말/반말",
+  color:"from-blue-400 to-indigo-500",
+  vocab:[
+   {korean:"안녕하세요",    chinese:"您好（敬語）",     ex:"선생님, 안녕하세요. / 老師您好。"},
+   {korean:"안녕",          chinese:"你好（平語）",     ex:"안녕! 잘 지냈어? / 你好！過得好嗎？"},
+   {korean:"감사합니다",    chinese:"謝謝（正式）",     ex:"도와주셔서 감사합니다. / 謝謝您幫忙。"},
+   {korean:"고마워",        chinese:"謝謝（平語）",     ex:"고마워, 친구야. / 謝謝你，朋友。"},
+   {korean:"죄송합니다",    chinese:"對不起（正式）",   ex:"늦어서 죄송합니다. / 對不起我遲到了。"},
+   {korean:"미안해",        chinese:"對不起（平語）",   ex:"미안해, 늦었어. / 對不起，我遲到了。"},
+   {korean:"괜찮아요",      chinese:"沒關係",           ex:"괜찮아요, 걱정 마세요. / 沒關係，不用擔心。"},
+   {korean:"어서 오세요",   chinese:"歡迎光臨",         ex:"어서 오세요! / 歡迎光臨！"},
+   {korean:"잘 지냈어요?",  chinese:"過得好嗎？",       ex:"오래간만에 잘 지냈어요? / 好久不見，過得好嗎？"},
+   {korean:"오래간만이에요",chinese:"好久不見",         ex:"오래간만이에요! / 好久不見！"},
+   {korean:"처음 뵙겠습니다",chinese:"初次見面",        ex:"처음 뵙겠습니다, 반갑습니다. / 初次見面，很高興認識您。"},
+   {korean:"잘 부탁드립니다",chinese:"請多關照",        ex:"앞으로 잘 부탁드립니다. / 以後請多關照。"},
+   {korean:"존댓말",        chinese:"敬語",               ex:"선생님께 존댓말을 해요. / 對老師說敬語。"},
+   {korean:"반말",          chinese:"平語",               ex:"친구에게 반말을 해요. / 對朋友說平語。"},
+   {korean:"나이",          chinese:"年齡",               ex:"나이가 몇 살이에요? / 幾歲了？"},
+   {korean:"연세",          chinese:"年齡（敬語）",       ex:"연세가 어떻게 되세요? / 您貴庚？"},
+   {korean:"이름",          chinese:"名字",               ex:"이름이 뭐예요? / 您叫什麼名字？"},
+   {korean:"성함",          chinese:"名字（敬語）",       ex:"성함이 어떻게 되세요? / 請問您貴姓？"},
+   {korean:"씨",            chinese:"先生/小姐（尊稱）", ex:"김민준 씨, 안녕하세요. / 金敏俊先生，您好。"},
+   {korean:"님",            chinese:"尊稱後綴",           ex:"선생님, 감사합니다. / 老師，謝謝。"},
+  ],
+  sentences:[
+   {sentence:"선생님, 안녕하___.",    answer:"세요",   hint:"안녕하세요（敬語）",     translation:"老師您好。"},
+   {sentence:"처음 뵙겠습니___.",     answer:"다",     hint:"처음 뵙겠습니다（格式）", translation:"初次見面。"},
+   {sentence:"잘 부탁드립니___.",     answer:"다",     hint:"잘 부탁드립니다（格式）", translation:"請多關照。"},
+   {sentence:"오래간만이___.",        answer:"에요",   hint:"오래간만이에요（母音尾）",translation:"好久不見。"},
+   {sentence:"감사합니___.",          answer:"다",     hint:"감사합니다（格式敬語）",  translation:"謝謝。"},
+   {sentence:"성함이 어떻게 되___?",  answer:"세요",   hint:"되다→되시다→되세요（敬語）",translation:"請問您貴姓？"},
+   {sentence:"죄송합니___.",          answer:"다",     hint:"죄송합니다（格式）",      translation:"對不起。"},
+  ],
+  grammar:[
+   {
+    name:"존댓말 인사 표현",
+    tag:"敬語問候",
+    exp:"韓文的敬語（존댓말）使用「-(으)세요」尊稱對方，或用更正式的「-ㅂ/습니다」體。對長輩、陌生人、老師使用敬語；對朋友、晚輩使用平語（반말）。",
+    rules:["一般敬語體：V/A + 아/어요 （去掉다，加아/어요）","格式敬語體：V/A + ㅂ니다/습니다 （更正式）","尊稱對方動作：V + (으)세요","平語（반말）：動詞語幹直接使用（아/어）"],
+    ex:[
+     {k:"선생님, 안녕하세요.", c:"老師，您好。",
+      w:[{w:"선생님",m:"老師"},{w:"안녕하세요",m:"您好（敬語）"}]},
+     {k:"처음 뵙겠습니다.",   c:"初次見面。",
+      w:[{w:"처음",m:"初次"},{w:"뵙겠습니다",m:"見面（格式敬語）"}]},
+     {k:"잘 부탁드립니다.",   c:"請多關照。",
+      w:[{w:"잘",m:"好好地"},{w:"부탁",m:"拜託"},{w:"드립니다",m:"드리다=給（向上給的敬語）+ㅂ니다"}]},
+    ]
+   },
+  ],
+ },
+ {
+  id:"K1B1", title:"K1B1", subtitle:"날씨 · 계절",
+  desc:"天氣季節 + ㅂ불규칙",
+  color:"from-indigo-400 to-violet-500",
+  vocab:[
+   {korean:"봄",       chinese:"春天",   ex:"봄이 따뜻해요. / 春天溫暖。"},
+   {korean:"여름",     chinese:"夏天",   ex:"여름에 수영해요. / 夏天游泳。"},
+   {korean:"가을",     chinese:"秋天",   ex:"가을이 예뻐요. / 秋天很美。"},
+   {korean:"겨울",     chinese:"冬天",   ex:"겨울에 눈이 와요. / 冬天下雪。"},
+   {korean:"맑다",     chinese:"晴朗",   ex:"오늘 날씨가 맑아요. / 今天天氣晴朗。"},
+   {korean:"흐리다",   chinese:"陰天",   ex:"날씨가 흐려요. / 天氣陰沉。"},
+   {korean:"비가 오다",chinese:"下雨",   ex:"오늘 비가 와요. / 今天下雨。"},
+   {korean:"눈이 오다",chinese:"下雪",   ex:"어제 눈이 왔어요. / 昨天下了雪。"},
+   {korean:"시원하다", chinese:"涼爽",   ex:"바람이 시원해요. / 風很涼爽。"},
+   {korean:"따뜻하다", chinese:"溫暖",   ex:"날씨가 따뜻해요. / 天氣溫暖。"},
+   {korean:"쌀쌀하다", chinese:"寒涼",   ex:"아침이 쌀쌀해요. / 早上寒涼。"},
+   {korean:"덥다",     chinese:"熱",     ex:"여름에 더워요. / 夏天很熱。"},
+   {korean:"춥다",     chinese:"冷",     ex:"겨울에 추워요. / 冬天很冷。"},
+   {korean:"맵다",     chinese:"辣",     ex:"이 음식이 매워요. / 這食物很辣。"},
+   {korean:"아름답다", chinese:"美麗",   ex:"한국이 아름다워요. / 韓國很美麗。"},
+   {korean:"가볍다",   chinese:"輕",     ex:"이 가방이 가벼워요. / 這包包很輕。"},
+   {korean:"무겁다",   chinese:"重",     ex:"짐이 무거워요. / 行李很重。"},
+   {korean:"귀엽다",   chinese:"可愛",     ex:"강아지가 귀여워요. / 狗狗很可愛。"},
+   {korean:"날씨",     chinese:"天氣",     ex:"날씨가 좋아요. / 天氣很好。"},
+   {korean:"바람",     chinese:"風",       ex:"바람이 강해요. / 風很強。"},
+   {korean:"태풍",     chinese:"颱風",     ex:"태풍이 와요. / 颱風來了。"},
+   {korean:"안개",     chinese:"霧",       ex:"안개가 많아요. / 霧很濃。"},
+   {korean:"습하다",   chinese:"潮濕",     ex:"여름에 습해요. / 夏天潮濕。"},
+   {korean:"건조하다", chinese:"乾燥",     ex:"겨울에 건조해요. / 冬天乾燥。"},
+   {korean:"최고 기온",chinese:"最高氣溫", ex:"최고 기온이 삼십 도예요. / 最高氣溫是三十度。"},
+   {korean:"최저 기온",chinese:"最低氣溫", ex:"최저 기온이 영하예요. / 最低氣溫是零下。"},
+   {korean:"영하",     chinese:"零下",     ex:"영하 십 도예요. / 是零下十度。"},
+  ],
+  sentences:[
+   {sentence:"오늘 날씨가 추___.",     answer:"워요", hint:"춥다→추워요（ㅂ불규칙）",    translation:"今天天氣很冷。"},
+   {sentence:"여름은 정말 더___.",     answer:"워요", hint:"덥다→더워요（ㅂ불규칙）",    translation:"夏天真的很熱。"},
+   {sentence:"이 음식이 많이 매___.",  answer:"워요", hint:"맵다→매워요（ㅂ불규칙）",    translation:"這食物很辣。"},
+   {sentence:"한국 가을은 아름다___.", answer:"워요", hint:"아름답다→아름다워요（ㅂ불규칙）",translation:"韓國的秋天很美麗。"},
+   {sentence:"오늘 날씨가 흐리___.",   answer:"어요", hint:"흐리다→흐려요",              translation:"今天天氣陰沉。"},
+   {sentence:"봄은 따뜻하___.",        answer:"여요", hint:"따뜻하다→따뜻해요",          translation:"春天很溫暖。"},
+   {sentence:"이 가방이 가벼___.",     answer:"워요", hint:"가볍다→가벼워요（ㅂ불규칙）", translation:"這包包很輕。"},
+   {sentence:"강아지가 정말 귀여___.", answer:"워요", hint:"귀엽다→귀여워요（ㅂ불규칙）", translation:"狗狗真的很可愛。"},
+   {sentence:"오늘 바람이 강하___.",   answer:"여요", hint:"강하다→강해요",               translation:"今天風很強。"},
+   {sentence:"겨울에 많이 건조하___.", answer:"여요", hint:"건조하다→건조해요",           translation:"冬天很乾燥。"},
+  ],
+  grammar:[
+   {
+    name:"ㅂ불규칙 활용",
+    tag:"ㅂ不規則",
+    exp:"語幹末以ㅂ結尾的形容詞（部分動詞），接母音開頭的語尾時，ㅂ→오，再與아/어合併成워요。例外：돕다（幫助）、곱다（美麗）的ㅂ→도와요、고와요。",
+    rules:["語幹末 ㅂ + 母音語尾 → ㅂ 刪除 + 워요","例：춥다→추워요、덥다→더워요、맵다→매워요、무겁다→무거워요","例外（돕다/곱다）：ㅂ → 와요"],
+    ex:[
+     {k:"오늘 날씨가 추워요.",    c:"今天天氣很冷。",
+      w:[{w:"오늘",m:"今天"},{w:"날씨",m:"天氣"},{w:"가",m:"〔主語〕"},{w:"추워요",m:"冷（ㅂ→워요）"}]},
+     {k:"이 음식이 매워요.",      c:"這食物很辣。",
+      w:[{w:"이",m:"這"},{w:"음식",m:"食物"},{w:"이",m:"〔主語〕"},{w:"매워요",m:"辣（ㅂ→워요）"}]},
+     {k:"한국 가을은 아름다워요.", c:"韓國秋天很美麗。",
+      w:[{w:"한국",m:"韓國"},{w:"가을",m:"秋天"},{w:"은",m:"〔主題〕"},{w:"아름다워요",m:"美麗（ㅂ→워요）"}]},
+    ]
+   },
+  ],
+ },
+ {
+  id:"K1B2", title:"K1B2", subtitle:"채소 · 과일 · 가격",
+  desc:"蔬菜水果 + 貨幣 + 에（單位）",
+  color:"from-violet-400 to-purple-500",
+  vocab:[
+   {korean:"배추",    chinese:"白菜",    ex:"배추로 김치를 만들어요. / 用白菜做泡菜。"},
+   {korean:"깻잎",    chinese:"芝麻葉",  ex:"깻잎이 맛있어요. / 芝麻葉很好吃。"},
+   {korean:"무",      chinese:"白蘿蔔",  ex:"무를 사요. / 買白蘿蔔。"},
+   {korean:"오이",    chinese:"小黃瓜",  ex:"오이가 싱싱해요. / 小黃瓜很新鮮。"},
+   {korean:"상추",    chinese:"生菜",    ex:"상추에 싸 먹어요. / 用生菜包著吃。"},
+   {korean:"고추",    chinese:"辣椒",    ex:"고추가 매워요. / 辣椒很辣。"},
+   {korean:"감자",    chinese:"馬鈴薯",  ex:"감자를 삶아요. / 煮馬鈴薯。"},
+   {korean:"버섯",    chinese:"香菇",    ex:"버섯이 맛있어요. / 香菇很好吃。"},
+   {korean:"양파",    chinese:"洋蔥",    ex:"양파를 썰어요. / 切洋蔥。"},
+   {korean:"마늘",    chinese:"大蒜",    ex:"마늘이 많아요. / 大蒜很多。"},
+   {korean:"당근",    chinese:"紅蘿蔔",  ex:"당근이 달아요. / 紅蘿蔔甜甜的。"},
+   {korean:"사과",    chinese:"蘋果",    ex:"사과를 먹어요. / 吃蘋果。"},
+   {korean:"바나나",  chinese:"香蕉",    ex:"바나나가 맛있어요. / 香蕉很好吃。"},
+   {korean:"포도",    chinese:"葡萄",    ex:"포도가 달아요. / 葡萄很甜。"},
+   {korean:"배",      chinese:"水梨",    ex:"배가 시원해요. / 水梨很清甜。"},
+   {korean:"수박",    chinese:"西瓜",    ex:"수박이 커요. / 西瓜很大。"},
+   {korean:"딸기",    chinese:"草莓",    ex:"딸기가 빨개요. / 草莓很紅。"},
+   {korean:"귤",      chinese:"橘子",    ex:"귤이 달아요. / 橘子很甜。"},
+   {korean:"키위",    chinese:"奇異果",  ex:"키위를 먹어요. / 吃奇異果。"},
+   {korean:"토마토",  chinese:"番茄",    ex:"토마토가 빨개요. / 番茄很紅。"},
+   {korean:"파",       chinese:"蔥",        ex:"파를 썰어요. / 切蔥。"},
+   {korean:"시금치",   chinese:"菠菜",      ex:"시금치를 데쳐요. / 燙菠菜。"},
+   {korean:"콩나물",   chinese:"豆芽",      ex:"콩나물을 볶아요. / 炒豆芽。"},
+   {korean:"브로콜리", chinese:"花椰菜",    ex:"브로콜리가 건강해요. / 花椰菜很健康。"},
+   {korean:"십 원",    chinese:"10韓元",    ex:"십 원이에요. / 是十元。"},
+   {korean:"백 원",    chinese:"100韓元",   ex:"백 원짜리예요. / 是百元幣。"},
+   {korean:"천 원",    chinese:"1000韓元",  ex:"천 원이에요. / 是一千元。"},
+   {korean:"만 원",    chinese:"10000韓元", ex:"만 원 주세요. / 請給我一萬元。"},
+   {korean:"거스름돈", chinese:"找零",      ex:"거스름돈 받아요. / 收找零。"},
+   {korean:"영수증",   chinese:"收據",      ex:"영수증 주세요. / 請給我收據。"},
+   {korean:"싱싱하다", chinese:"新鮮",      ex:"오늘 채소가 싱싱해요. / 今天蔬菜很新鮮。"},
+   {korean:"달다",     chinese:"甜",        ex:"이 사과가 달아요. / 這蘋果很甜。"},
+  ],
+  sentences:[
+   {sentence:"사과가 한 개___ 이천 원이에요.", answer:"에",  hint:"N에 금액：每N多少錢",        translation:"蘋果一個兩千元。"},
+   {sentence:"딸기가 한 박스___ 오천 원이에요.", answer:"에", hint:"N에 금액",                   translation:"草莓一盒五千元。"},
+   {sentence:"수박이 한 통___ 만 원이에요.",    answer:"에",  hint:"N에 금액",                   translation:"西瓜一個一萬元。"},
+   {sentence:"감자가 얼마___?",                answer:"예요", hint:"얼마예요（母音尾）",           translation:"馬鈴薯多少錢？"},
+   {sentence:"이 오이 세 개___ 천 원이에요.",  answer:"에",  hint:"N에 금액",                   translation:"這小黃瓜三條一千元。"},
+   {sentence:"오늘 채소가 정말 싱싱하___.",    answer:"여요", hint:"싱싱하다→싱싱해요",           translation:"今天蔬菜真的很新鮮。"},
+   {sentence:"이 딸기가 아주 달___.",          answer:"아요", hint:"달다(ㅏ語幹)→달아요",         translation:"這草莓非常甜。"},
+   {sentence:"거스름돈 주___.",               answer:"세요", hint:"주다→주세요（請給）",          translation:"請給我找零。"},
+  ],
+  grammar:[
+   {
+    name:"N에 가격 / 얼마예요？",
+    tag:"詢問價格",
+    exp:"표示「每N多少錢」的格式是「N에 금액이에요」，助詞에在此表示「單位」。詢問價格用「얼마예요？」（多少錢？）。",
+    rules:["단위 + 에 + 가격 이에요：한 개에 천 원이에요（一個一千元）","얼마예요？→ 詢問價格","韓元：십 원、백 원、천 원、만 원、십만 원"],
+    ex:[
+     {k:"사과가 한 개에 이천 원이에요.", c:"蘋果一個兩千元。",
+      w:[{w:"사과",m:"蘋果"},{w:"가",m:"〔主語〕"},{w:"한",m:"一"},{w:"개",m:"〔量：個〕"},{w:"에",m:"〔單位〕"},{w:"이천",m:"兩千"},{w:"원",m:"韓元"},{w:"이에요",m:"是"}]},
+     {k:"이 딸기 얼마예요？",           c:"這草莓多少錢？",
+      w:[{w:"이",m:"這"},{w:"딸기",m:"草莓"},{w:"얼마",m:"多少錢"},{w:"예요",m:"是"}]},
+     {k:"수박이 한 통에 만 원이에요.",   c:"西瓜一個一萬元。",
+      w:[{w:"수박",m:"西瓜"},{w:"이",m:"〔主語〕"},{w:"한",m:"一"},{w:"통",m:"〔量：個〕"},{w:"에",m:"〔單位〕"},{w:"만",m:"一萬"},{w:"원",m:"韓元"},{w:"이에요",m:"是"}]},
+    ]
+   },
+  ],
+ },
+ {
+  id:"K1B3", title:"K1B3", subtitle:"운동 · 취미",
+  desc:"運動休閒 + ㄷ불규칙",
+  color:"from-purple-400 to-fuchsia-500",
+  vocab:[
+   {korean:"등산",     chinese:"爬山",   ex:"주말에 등산해요. / 週末爬山。"},
+   {korean:"축구",     chinese:"足球",   ex:"축구를 좋아해요. / 喜歡足球。"},
+   {korean:"농구",     chinese:"籃球",   ex:"농구를 해요. / 打籃球。"},
+   {korean:"야구",     chinese:"棒球",   ex:"야구를 봐요. / 看棒球。"},
+   {korean:"배드민턴", chinese:"羽毛球", ex:"배드민턴을 쳐요. / 打羽毛球。"},
+   {korean:"테니스",   chinese:"網球",   ex:"테니스를 배워요. / 學網球。"},
+   {korean:"스키",     chinese:"滑雪",   ex:"겨울에 스키를 타요. / 冬天滑雪。"},
+   {korean:"스케이트", chinese:"溜冰",   ex:"스케이트를 타요. / 溜冰。"},
+   {korean:"수영",     chinese:"游泳",   ex:"여름에 수영해요. / 夏天游泳。"},
+   {korean:"독서",     chinese:"閱讀",   ex:"독서를 좋아해요. / 喜歡閱讀。"},
+   {korean:"그림",     chinese:"畫畫",   ex:"그림을 그려요. / 畫畫。"},
+   {korean:"춤",       chinese:"舞蹈",   ex:"춤을 춰요. / 跳舞。"},
+   {korean:"음악",     chinese:"音樂",   ex:"음악을 들어요. / 聽音樂。"},
+   {korean:"듣다",     chinese:"聽",       ex:"음악을 들어요. / 聽音樂。（ㄷ불규칙）"},
+   {korean:"걷다",     chinese:"走路",     ex:"공원을 걸어요. / 在公園散步。（ㄷ불규칙）"},
+   {korean:"묻다",     chinese:"詢問/問",  ex:"길을 물어요. / 問路。（ㄷ불규칙）"},
+   {korean:"여행",     chinese:"旅行",     ex:"여행을 좋아해요. / 喜歡旅行。"},
+   {korean:"노래",     chinese:"歌/唱歌",  ex:"노래를 잘 해요. / 歌唱得好。"},
+   {korean:"게임",     chinese:"遊戲",     ex:"게임을 해요. / 玩遊戲。"},
+   {korean:"낚시",     chinese:"釣魚",     ex:"낚시를 좋아해요. / 喜歡釣魚。"},
+   {korean:"취미",     chinese:"嗜好",     ex:"취미가 뭐예요? / 嗜好是什麼？"},
+  ],
+  sentences:[
+   {sentence:"음악을 들___.",           answer:"어요", hint:"듣다→들어요（ㄷ불규칙）",   translation:"聽音樂。"},
+   {sentence:"공원에서 걸___.",          answer:"어요", hint:"걷다→걸어요（ㄷ불규칙）",   translation:"在公園散步。"},
+   {sentence:"주말에 등산을 하___.",     answer:"여요", hint:"하다→해요",                 translation:"週末爬山。"},
+   {sentence:"저는 수영을 좋아하___.",   answer:"여요", hint:"하다→해요",                 translation:"我喜歡游泳。"},
+   {sentence:"친구한테 길을 물___.",     answer:"어요", hint:"묻다→물어요（ㄷ불규칙）",   translation:"向朋友問路。"},
+   {sentence:"매일 한강에서 걷___.",     answer:"어요", hint:"걷다→걸어요（ㄷ불규칙）",   translation:"每天在漢江散步。"},
+   {sentence:"같이 축구를 할___?",       answer:"까요", hint:"V(으)ㄹ까요？ 提議/疑問",   translation:"要不要一起踢足球？"},
+   {sentence:"우리 같이 노래를 들___?",  answer:"을까요",hint:"듣다→들→들을까요（ㄷ불규칙）",translation:"我們要不要一起聽歌？"},
+   {sentence:"취미가 뭐___?",           answer:"예요",  hint:"뭐(母音尾)→예요",           translation:"嗜好是什麼？"},
+  ],
+  grammar:[
+   {
+    name:"ㄷ불규칙 활용",
+    tag:"ㄷ不規則",
+    exp:"語幹末以ㄷ結尾的動詞，接母音開頭的語尾時，ㄷ→ㄹ。例外（規則ㄷ）：닫다（關）→닫아요，믿다（信）→믿어요，받다（收）→받아요。",
+    rules:["不規則ㄷ + 母音語尾：ㄷ→ㄹ + 아/어요","듣다→들어요、걷다→걸어요、묻다→물어요","規則ㄷ（例外）：닫다→닫아요、믿다→믿어요、받다→받아요"],
+    ex:[
+     {k:"음악을 들어요.",        c:"聽音樂。",
+      w:[{w:"음악",m:"音樂"},{w:"을",m:"〔受詞〕"},{w:"들어요",m:"聽（ㄷ→ㄹ）"}]},
+     {k:"공원에서 걸어요.",      c:"在公園散步。",
+      w:[{w:"공원",m:"公園"},{w:"에서",m:"〔場所〕"},{w:"걸어요",m:"走（ㄷ→ㄹ）"}]},
+     {k:"친구한테 길을 물어요.", c:"向朋友問路。",
+      w:[{w:"친구",m:"朋友"},{w:"한테",m:"〔對象〕"},{w:"길",m:"路"},{w:"을",m:"〔受詞〕"},{w:"물어요",m:"問（ㄷ→ㄹ）"}]},
+    ]
+   },
+   {
+    name:"V(으)ㄹ까요？",
+    tag:"提議・疑問",
+    exp:"表示「要不要做～？」（向對方提議）或「～嗎？」（徵詢意見）。語幹末有尾音→을까요；語幹末無尾音或ㄹ→ㄹ까요。ㄷ不規則動詞在此也適用：듣다→들을까요。",
+    rules:["語幹末 有尾音（非ㄹ）→ 을까요","語幹末 無尾音 / ㄹ → ㄹ까요","ㄷ불규칙 + 을까요：걷다→걸을까요、듣다→들을까요"],
+    ex:[
+     {k:"같이 축구를 할까요?",   c:"要不要一起踢足球？",
+      w:[{w:"같이",m:"一起"},{w:"축구",m:"足球"},{w:"를",m:"〔受詞〕"},{w:"할까요",m:"要做嗎（提議）"}]},
+     {k:"음악을 들을까요?",      c:"要不要聽音樂？",
+      w:[{w:"음악",m:"音樂"},{w:"을",m:"〔受詞〕"},{w:"들을까요",m:"要聽嗎（ㄷ불규칙）"}]},
+     {k:"공원에서 걸을까요?",    c:"要不要在公園散步？",
+      w:[{w:"공원",m:"公園"},{w:"에서",m:"〔場所〕"},{w:"걸을까요",m:"要走嗎（ㄷ불규칙）"}]},
+    ]
+   },
+  ],
+ },
+ {
+  id:"K1B4", title:"K1B4", subtitle:"가족 · 家族",
+  desc:"家族稱謂",
+  color:"from-fuchsia-400 to-rose-500",
+  vocab:[
+   {korean:"할아버지", chinese:"爺爺/外公",   ex:"할아버지가 건강해요. / 爺爺很健康。"},
+   {korean:"할머니",   chinese:"奶奶/外婆",   ex:"할머니가 요리해요. / 奶奶做菜。"},
+   {korean:"아버지",   chinese:"父親",         ex:"아버지는 회사에 다녀요. / 父親在公司上班。"},
+   {korean:"어머니",   chinese:"母親",         ex:"어머니가 바빠요. / 母親很忙。"},
+   {korean:"아빠",     chinese:"爸爸（親切）", ex:"아빠, 사랑해요. / 爸爸，我愛你。"},
+   {korean:"엄마",     chinese:"媽媽（親切）", ex:"엄마, 밥 먹어요. / 媽媽，吃飯了。"},
+   {korean:"오빠",     chinese:"哥哥（女稱）", ex:"오빠가 멋있어요. / 哥哥很帥。"},
+   {korean:"형",       chinese:"哥哥（男稱）", ex:"형이 대학생이에요. / 哥哥是大學生。"},
+   {korean:"언니",     chinese:"姊姊（女稱）", ex:"언니가 예뻐요. / 姊姊很漂亮。"},
+   {korean:"누나",     chinese:"姊姊（男稱）", ex:"누나가 착해요. / 姊姊很善良。"},
+   {korean:"남동생",   chinese:"弟弟",         ex:"남동생이 어려요. / 弟弟很小。"},
+   {korean:"여동생",   chinese:"妹妹",         ex:"여동생이 귀여워요. / 妹妹很可愛。"},
+   {korean:"고모",     chinese:"姑姑",         ex:"고모가 서울에 살아요. / 姑姑住在首爾。"},
+   {korean:"이모",     chinese:"阿姨",         ex:"이모가 친절해요. / 阿姨很親切。"},
+   {korean:"삼촌",     chinese:"叔叔/舅舅",   ex:"삼촌이 재미있어요. / 叔叔很有趣。"},
+   {korean:"사촌",     chinese:"堂/表兄弟姊妹",ex:"사촌이 많아요. / 堂表兄弟姊妹很多。"},
+   {korean:"남편",     chinese:"丈夫",         ex:"남편이 요리해요. / 丈夫做菜。"},
+   {korean:"아내",     chinese:"妻子",         ex:"아내가 예뻐요. / 妻子很漂亮。"},
+   {korean:"아들",       chinese:"兒子",           ex:"아들이 학생이에요. / 兒子是學生。"},
+   {korean:"딸",         chinese:"女兒",           ex:"딸이 귀여워요. / 女兒很可愛。"},
+   {korean:"가족",       chinese:"家人/家族",      ex:"가족이 몇 명이에요? / 家人有幾個？"},
+   {korean:"부모님",     chinese:"父母（敬稱）",   ex:"부모님이 건강하세요. / 父母很健康。"},
+   {korean:"형제",       chinese:"兄弟",           ex:"형제가 있어요? / 有兄弟嗎？"},
+   {korean:"자매",       chinese:"姊妹",           ex:"자매가 두 명 있어요. / 有兩個姊妹。"},
+   {korean:"외동",       chinese:"獨生子/女",      ex:"저는 외동이에요. / 我是獨生子。"},
+   {korean:"결혼하다",   chinese:"結婚",           ex:"언니가 결혼했어요. / 姊姊結婚了。"},
+   {korean:"살다",       chinese:"住/生活",        ex:"서울에 살아요. / 住在首爾。"},
+   {korean:"직업",       chinese:"職業",           ex:"직업이 뭐예요? / 職業是什麼？"},
+  ],
+  sentences:[
+   {sentence:"우리 가족은 모두 다섯 명이___.",  answer:"에요", hint:"명이에요",                   translation:"我們家共五個人。"},
+   {sentence:"저는 오빠가 한 명 있___.",        answer:"어요", hint:"있다→있어요",                translation:"我有一個哥哥。"},
+   {sentence:"할머니는 요리를 잘 하___.",       answer:"세요", hint:"하다→하시다→하세요（敬語）",  translation:"奶奶擅長做菜。"},
+   {sentence:"아버지는 회사에 다니___.",        answer:"세요", hint:"다니다→다니시다→다니세요（敬語）",translation:"父親在公司上班。"},
+   {sentence:"남동생은 대학교에 다니___.",      answer:"어요", hint:"다니다→다녀요（非敬語）",     translation:"弟弟在大學讀書。"},
+   {sentence:"저___ 언니가 있어요.",           answer:"도",   hint:"도＝也",                    translation:"我也有姊姊。"},
+   {sentence:"우리 어머니___ 요리를 잘 해요.", answer:"만",   hint:"만＝只有",                  translation:"只有我媽媽擅長做菜。"},
+   {sentence:"할아버지는 서울에 사___.",        answer:"세요", hint:"살다→사시다→사세요（敬語）",   translation:"爺爺住在首爾。"},
+   {sentence:"부모님이 건강하___.",            answer:"세요", hint:"건강하다→건강하시다→건강하세요",translation:"父母很健康。"},
+   {sentence:"언니는 결혼했___.",              answer:"어요", hint:"결혼하다→결혼했어요（過去）",  translation:"姊姊結婚了。"},
+  ],
+  grammar:[
+   {
+    name:"N도/만 ／ V(으)시어요→세요",
+    tag:"도·만·敬語",
+    exp:"도（也）表示添加；만（只）表示限定。敬語語尾（으시）表示動作主語是尊敬對象。語幹末有尾音→으시고/으세요；無尾音→시고/세요。",
+    rules:["N도：A도、B도 → A也、B也","N만：A만 → 只有A","V（으）시 + 어요 → 세요（尊稱對方動作）","語幹末有尾音→으세요 ／ 無尾音或ㄹ→세요"],
+    ex:[
+     {k:"저도 한국어를 공부해요.",     c:"我也學韓文。",
+      w:[{w:"저",m:"我"},{w:"도",m:"〔也〕"},{w:"한국어",m:"韓文"},{w:"를",m:"〔受詞〕"},{w:"공부해요",m:"學習"}]},
+     {k:"할머니는 요리를 잘 하세요.",  c:"奶奶擅長做菜。（敬語）",
+      w:[{w:"할머니",m:"奶奶"},{w:"는",m:"〔主題〕"},{w:"요리",m:"料理"},{w:"를",m:"〔受詞〕"},{w:"잘",m:"擅長"},{w:"하세요",m:"做（敬語）"}]},
+     {k:"아버지만 회사에 다니세요.",   c:"只有父親在公司上班。（敬語）",
+      w:[{w:"아버지",m:"父親"},{w:"만",m:"〔只有〕"},{w:"회사",m:"公司"},{w:"에",m:"〔場所〕"},{w:"다니세요",m:"上班（敬語）"}]},
+    ]
+   },
+  ],
+ },
+ {
+  id:"K1B5", title:"K1B5", subtitle:"서울 여행",
+  desc:"首爾景點 + 아/어 보다",
+  color:"from-rose-400 to-orange-500",
+  vocab:[
+   {korean:"신촌",       chinese:"新村",       ex:"신촌에서 놀아요. / 在新村玩。"},
+   {korean:"청계천",     chinese:"清溪川",     ex:"청계천을 걸어요. / 在清溪川散步。"},
+   {korean:"한강공원",   chinese:"漢江公園",   ex:"한강공원에서 쉬어요. / 在漢江公園休息。"},
+   {korean:"인사동",     chinese:"仁寺洞",     ex:"인사동에서 구경해요. / 在仁寺洞逛逛。"},
+   {korean:"경복궁",     chinese:"景福宮",     ex:"경복궁에 가 봤어요. / 去過景福宮。"},
+   {korean:"창덕궁",     chinese:"昌德宮",     ex:"창덕궁이 아름다워요. / 昌德宮很美麗。"},
+   {korean:"남이섬",     chinese:"南怡島",     ex:"남이섬에 가고 싶어요. / 想去南怡島。"},
+   {korean:"제주도",     chinese:"濟州島",     ex:"제주도가 예뻐요. / 濟州島很美。"},
+   {korean:"명동",       chinese:"明洞",       ex:"명동에서 쇼핑해요. / 在明洞購物。"},
+   {korean:"홍대",       chinese:"弘大",       ex:"홍대에 자주 가요. / 常去弘大。"},
+   {korean:"이태원",     chinese:"梨泰院",     ex:"이태원에서 먹어요. / 在梨泰院吃飯。"},
+   {korean:"북촌",       chinese:"北村",       ex:"북촌에서 사진을 찍어요. / 在北村拍照。"},
+   {korean:"동대문",     chinese:"東大門",     ex:"동대문에서 쇼핑해요. / 在東大門購物。"},
+   {korean:"남산타워",   chinese:"南山塔",     ex:"남산타워에 가 봤어요. / 去過南山塔。"},
+   {korean:"한옥마을",   chinese:"韓屋村",     ex:"한옥마을이 예뻐요. / 韓屋村很漂亮。"},
+   {korean:"가 보다",    chinese:"去看看",     ex:"한번 가 봐요. / 去看看吧。"},
+   {korean:"먹어 보다",  chinese:"嘗嘗看",     ex:"이거 먹어 봐요. / 嘗嘗看這個。"},
+   {korean:"입어 보다",  chinese:"試穿看看",   ex:"이 옷 입어 봐요. / 試穿這件衣服。"},
+   {korean:"타 보다",    chinese:"搭乘看看",   ex:"지하철을 타 봐요. / 搭搭看地鐵。"},
+   {korean:"해 보다",    chinese:"試試看",     ex:"한번 해 봐요. / 試試看。"},
+   {korean:"찍어 보다",  chinese:"拍拍看",     ex:"사진을 찍어 봐요. / 試著拍照。"},
+  ],
+  sentences:[
+   {sentence:"경복궁에 가 보___.",       answer:"았어요", hint:"가 봤어요（過去經驗）",       translation:"去過景福宮了。"},
+   {sentence:"삼겹살을 먹어 보___.",     answer:"았어요", hint:"먹어 봤어요（過去經驗）",     translation:"嘗過五花肉了。"},
+   {sentence:"한국 드라마를 봐 보___.",  answer:"았어요", hint:"봐 봤어요（過去經驗）",       translation:"看過韓劇了。"},
+   {sentence:"제주도에 꼭 가 보___.",    answer:"세요",   hint:"가 보세요（建議）",           translation:"請一定要去濟州島看看。"},
+   {sentence:"인사동에 한번 가 보___.",  answer:"세요",   hint:"가 보세요（建議）",           translation:"請去仁寺洞看看。"},
+   {sentence:"이 음식 먹어 보___?",      answer:"았어요", hint:"먹어 봤어요？（有沒有經驗）", translation:"嘗過這個食物嗎？"},
+   {sentence:"지하철을 타 보___.",       answer:"았어요", hint:"타 봤어요（過去經驗）",       translation:"搭過地鐵了。"},
+   {sentence:"남산타워에서 사진을 찍어 보___.", answer:"세요", hint:"찍어 보세요（建議）",   translation:"請在南山塔拍照看看。"},
+  ],
+  grammar:[
+   {
+    name:"V아/어 보다",
+    tag:"嘗試・經驗",
+    exp:"「試試看做某事」或「有過做某事的經驗」。現在式→V아/어 봐요；過去經驗→V아/어 봤어요；建議對方嘗試→V아/어 보세요。",
+    rules:["V語幹末 ㅏ/ㅗ → 아 봐요（가→가 봐요）","V語幹末 其他 → 어 봐요（먹다→먹어 봐요）","過去：봐요→봤어요","建議：봐요→보세요"],
+    ex:[
+     {k:"경복궁에 가 봤어요.",    c:"去過景福宮了。",
+      w:[{w:"경복궁",m:"景福宮"},{w:"에",m:"〔方向〕"},{w:"가",m:"去"},{w:"봤어요",m:"看看（經驗）"}]},
+     {k:"삼겹살을 먹어 봐요.",    c:"嘗嘗五花肉吧。",
+      w:[{w:"삼겹살",m:"五花肉"},{w:"을",m:"〔受詞〕"},{w:"먹어",m:"吃"},{w:"봐요",m:"看看（嘗試）"}]},
+     {k:"제주도에 꼭 가 보세요.",  c:"請一定要去濟州島看看。",
+      w:[{w:"제주도",m:"濟州島"},{w:"에",m:"〔方向〕"},{w:"꼭",m:"一定"},{w:"가",m:"去"},{w:"보세요",m:"看看（建議）"}]},
+    ]
+   },
+  ],
+ },
+ {
+  id:"K1C1", title:"K1C1-3", subtitle:"옷 · 쇼핑",
+  desc:"服飾配件 + V는 N + -고 싶다",
+  color:"from-amber-400 to-yellow-500",
+  vocab:[
+   {korean:"셔츠",   chinese:"襯衫",   ex:"셔츠를 입어요. / 穿襯衫。"},
+   {korean:"티셔츠", chinese:"T恤",    ex:"티셔츠가 편해요. / T恤很舒適。"},
+   {korean:"청바지", chinese:"牛仔褲", ex:"청바지를 입어요. / 穿牛仔褲。"},
+   {korean:"잠바",   chinese:"夾克",   ex:"잠바가 따뜻해요. / 夾克很暖。"},
+   {korean:"치마",   chinese:"裙子",   ex:"치마가 예뻐요. / 裙子很漂亮。"},
+   {korean:"원피스", chinese:"洋裝",   ex:"원피스를 사요. / 買洋裝。"},
+   {korean:"반바지", chinese:"短褲",   ex:"여름에 반바지를 입어요. / 夏天穿短褲。"},
+   {korean:"코트",   chinese:"大衣",   ex:"겨울에 코트를 입어요. / 冬天穿大衣。"},
+   {korean:"모자",   chinese:"帽子",   ex:"모자를 써요. / 戴帽子。"},
+   {korean:"안경",   chinese:"眼鏡",   ex:"안경을 써요. / 戴眼鏡。"},
+   {korean:"목걸이", chinese:"項鍊",   ex:"목걸이를 해요. / 戴項鍊。"},
+   {korean:"목도리", chinese:"圍巾",   ex:"목도리를 해요. / 圍圍巾。"},
+   {korean:"장갑",   chinese:"手套",   ex:"장갑을 껴요. / 戴手套。"},
+   {korean:"팔찌",   chinese:"手環",   ex:"팔찌를 해요. / 戴手環。"},
+   {korean:"귀걸이", chinese:"耳環",   ex:"귀걸이를 해요. / 戴耳環。"},
+   {korean:"반지",   chinese:"戒指",   ex:"반지를 해요. / 戴戒指。"},
+   {korean:"입다",   chinese:"穿（衣）",ex:"옷을 입어요. / 穿衣服。"},
+   {korean:"신다",   chinese:"穿（鞋）",ex:"신발을 신어요. / 穿鞋子。"},
+   {korean:"쓰다",   chinese:"戴（帽/鏡）",ex:"모자를 써요. / 戴帽子。"},
+   {korean:"하다",     chinese:"戴（飾品）",   ex:"목걸이를 해요. / 戴項鍊。"},
+   {korean:"색깔",     chinese:"顏色",         ex:"무슨 색깔이에요? / 是什麼顏色？"},
+   {korean:"빨간",     chinese:"紅色的",       ex:"빨간 원피스가 예뻐요. / 紅色洋裝很漂亮。"},
+   {korean:"파란",     chinese:"藍色的",       ex:"파란 청바지를 입어요. / 穿藍色牛仔褲。"},
+   {korean:"하얀",     chinese:"白色的",       ex:"하얀 셔츠가 있어요. / 有白色襯衫。"},
+   {korean:"까만",     chinese:"黑色的",       ex:"까만 코트를 사요. / 買黑色大衣。"},
+   {korean:"사이즈",   chinese:"尺寸",         ex:"사이즈가 어떻게 되세요? / 您的尺寸是多少？"},
+  ],
+  sentences:[
+   {sentence:"저는 청바지를 입고 싶___.",      answer:"어요", hint:"-고 싶다→-고 싶어요",          translation:"我想穿牛仔褲。"},
+   {sentence:"빨간 모자를 쓰고 싶___.",        answer:"어요", hint:"-고 싶다→-고 싶어요",          translation:"想戴紅色帽子。"},
+   {sentence:"지금 입___ 옷이 예뻐요.",        answer:"는",   hint:"V는 N（현재）：現在在穿的",     translation:"現在穿的衣服很漂亮。"},
+   {sentence:"친구가 사고 싶___ 옷이 있어요.", answer:"은",   hint:"V은 N（과거/상태）：想要買的",   translation:"朋友有想買的衣服。"},
+   {sentence:"어제 산 원피스를 입어 보___.",   answer:"았어요",hint:"입어 봤어요（過去經驗）",       translation:"試穿了昨天買的洋裝。"},
+   {sentence:"이 목걸이 해 보___?",            answer:"았어요",hint:"해 봤어요？（有沒有試過）",     translation:"試戴過這條項鍊嗎？"},
+   {sentence:"돈이 있___ 이 코트를 살 거예요.", answer:"으면", hint:"있다→있으면（有尾音→으면）",   translation:"如果有錢就買這件大衣。"},
+   {sentence:"사이즈가 맞___ 사세요.",         answer:"으면", hint:"맞다→맞으면（有尾音→으면）",    translation:"如果尺寸合適就買吧。"},
+  ],
+  grammar:[
+   {
+    name:"V는 N ／ -고 싶다",
+    tag:"修飾語・願望",
+    exp:"①「V는 N」是動詞修飾名詞的現在式形式（正在做～的N）。②「-고 싶다」表示說話者的願望「想要做～」，接動詞語幹後加고 싶어요。",
+    rules:["動詞修飾名詞（現在）：V語幹 + 는 + N","動詞修飾名詞（過去）：V語幹 + (으)ㄴ + N","願望：V語幹 + 고 싶어요"],
+    ex:[
+     {k:"지금 입는 옷이 예뻐요.",    c:"現在穿的衣服很漂亮。",
+      w:[{w:"지금",m:"現在"},{w:"입는",m:"穿（V는）"},{w:"옷",m:"衣服"},{w:"이",m:"〔主語〕"},{w:"예뻐요",m:"漂亮"}]},
+     {k:"저는 청바지를 입고 싶어요.", c:"我想穿牛仔褲。",
+      w:[{w:"저",m:"我"},{w:"는",m:"〔主題〕"},{w:"청바지",m:"牛仔褲"},{w:"를",m:"〔受詞〕"},{w:"입고",m:"穿"},{w:"싶어요",m:"想要"}]},
+     {k:"사고 싶은 옷이 있어요.",    c:"有想買的衣服。",
+      w:[{w:"사고",m:"買"},{w:"싶은",m:"想要（修飾）"},{w:"옷",m:"衣服"},{w:"이",m:"〔主語〕"},{w:"있어요",m:"有"}]},
+    ]
+   },
+   {
+    name:"V/A-(으)면",
+    tag:"條件假設",
+    exp:"表示「如果～就～」的條件句。語幹末有尾音（非ㄹ）→으면；語幹末無尾音或ㄹ→면。",
+    rules:["語幹末 有尾音（非ㄹ）→ 으면 （먹다→먹으면、있다→있으면）","語幹末 無尾音 → 면 （가다→가면、비싸다→비싸면）","語幹末 ㄹ → 면 （팔다→팔면）"],
+    ex:[
+     {k:"돈이 있으면 살 거예요.",  c:"如果有錢就要買。",
+      w:[{w:"돈",m:"錢"},{w:"이",m:"〔主語〕"},{w:"있으면",m:"如果有"},{w:"살",m:"買"},{w:"거예요",m:"打算"}]},
+     {k:"사이즈가 맞으면 사세요.", c:"如果尺寸合適就買吧。",
+      w:[{w:"사이즈",m:"尺寸"},{w:"가",m:"〔主語〕"},{w:"맞으면",m:"如果合適"},{w:"사세요",m:"請買（敬語）"}]},
+     {k:"비싸면 안 사도 돼요.",    c:"如果太貴不買也可以。",
+      w:[{w:"비싸면",m:"如果貴"},{w:"안",m:"不"},{w:"사도",m:"買也"},{w:"돼요",m:"可以"}]},
+    ]
+   },
+  ],
+ },
+ {
+  id:"K1C2", title:"K1C2-3", subtitle:"식사 예절",
+  desc:"飲食禮儀 + -아/어도 되다",
+  color:"from-lime-400 to-green-500",
+  vocab:[
+   {korean:"수저를 들다",    chinese:"拿起湯匙筷子", ex:"어른 먼저 수저를 들어요. / 長輩先拿起筷子。"},
+   {korean:"물을 따르다",    chinese:"倒水",         ex:"물을 따라 드려요. / 幫您倒水。"},
+   {korean:"앞접시에 담다",  chinese:"盛到小碟",     ex:"앞접시에 담아서 먹어요. / 盛到小碟子吃。"},
+   {korean:"그릇을 들다",    chinese:"端起碗",       ex:"한국에서는 그릇을 들면 안 돼요. / 在韓國不能端起碗。"},
+   {korean:"젓가락",         chinese:"筷子",         ex:"젓가락을 써요. / 用筷子。"},
+   {korean:"숟가락",         chinese:"湯匙",         ex:"숟가락으로 먹어요. / 用湯匙吃。"},
+   {korean:"앞접시",         chinese:"小碟子",       ex:"앞접시를 써요. / 使用小碟子。"},
+   {korean:"국",             chinese:"湯",           ex:"국을 마셔요. / 喝湯。"},
+   {korean:"반찬",           chinese:"小菜",         ex:"반찬이 많아요. / 小菜很多。"},
+   {korean:"먼저",           chinese:"先/首先",      ex:"어른이 먼저 드세요. / 長輩先吃。"},
+   {korean:"같이",           chinese:"一起",         ex:"같이 먹어요. / 一起吃。"},
+   {korean:"잘 먹겠습니다",  chinese:"我要開動了",     ex:"잘 먹겠습니다! / 我要開動了！"},
+   {korean:"잘 먹었습니다",  chinese:"謝謝款待",       ex:"잘 먹었습니다! / 謝謝招待！"},
+   {korean:"천천히 드세요",  chinese:"請慢慢吃",       ex:"천천히 드세요. / 請慢慢吃。"},
+   {korean:"어른",          chinese:"長輩/大人",       ex:"어른 먼저 드세요. / 長輩先吃。"},
+   {korean:"식사 예절",      chinese:"飲食禮儀",       ex:"한국 식사 예절을 알아요. / 我知道韓國飲食禮儀。"},
+   {korean:"음식을 남기다",  chinese:"剩食物",         ex:"음식을 남기지 마세요. / 請不要剩食物。"},
+   {korean:"소리를 내다",    chinese:"發出聲音",       ex:"밥 먹을 때 소리를 내면 안 돼요. / 吃飯時不可以發出聲音。"},
+   {korean:"자리를 비우다",  chinese:"離席",           ex:"잠깐 자리를 비워도 돼요. / 可以暫時離席。"},
+   {korean:"계산하다",       chinese:"結帳",           ex:"제가 계산할게요. / 我來結帳。"},
+   {korean:"더치페이",       chinese:"各付各的",       ex:"더치페이로 해요. / 各付各的吧。"},
+  ],
+  sentences:[
+   {sentence:"사진 찍어도 되___?",           answer:"요",   hint:"-아/어도 돼요（可以）",        translation:"可以拍照嗎？"},
+   {sentence:"여기 앉아도 되___?",           answer:"요",   hint:"-아/어도 돼요（可以）",        translation:"可以坐這裡嗎？"},
+   {sentence:"이것 먹어도 되___?",           answer:"요",   hint:"-아/어도 돼요（可以）",        translation:"可以吃這個嗎？"},
+   {sentence:"먼저 가도 되___?",             answer:"요",   hint:"-아/어도 돼요（可以）",        translation:"可以先走嗎？"},
+   {sentence:"한국에서는 그릇을 들면 안 되___.", answer:"요", hint:"-면 안 돼요（不可以）",     translation:"在韓國不能端起碗。"},
+   {sentence:"잘 먹겠습니___.",              answer:"다",   hint:"잘 먹겠습니다（開動前）",      translation:"我要開動了。"},
+   {sentence:"잘 먹었습니___.",              answer:"다",   hint:"잘 먹었습니다（飯後感謝）",    translation:"謝謝招待。"},
+   {sentence:"밥 먹을 때 소리를 내면 안 되___.", answer:"요", hint:"-면 안 돼요（禁止）",      translation:"吃飯時不可以發出聲音。"},
+   {sentence:"어른보다 먼저 수저를 들면 안 되___.", answer:"요", hint:"-면 안 돼요（禁止）",  translation:"不可以比長輩先拿起筷子。"},
+  ],
+  grammar:[
+   {
+    name:"-아/어도 되다 ／ -(으)면 안 되다",
+    tag:"許可・禁止",
+    exp:"「-아/어도 돼요」表示「可以做～（許可）」；「-(으)면 안 돼요」表示「不可以做～（禁止）」。두 者都是生活中非常常用的句型。",
+    rules:["許可：V語幹 + 아/어도 돼요（되다→돼요）","禁止：V語幹 + (으)면 안 돼요","語幹末有尾音 → 으면 ／ 無尾音 → 면"],
+    ex:[
+     {k:"여기 앉아도 돼요？",          c:"可以坐這裡嗎？",
+      w:[{w:"여기",m:"這裡"},{w:"앉아도",m:"坐也"},{w:"돼요",m:"可以（許可）"}]},
+     {k:"사진을 찍으면 안 돼요.",       c:"不可以拍照。",
+      w:[{w:"사진",m:"照片"},{w:"을",m:"〔受詞〕"},{w:"찍으면",m:"拍的話"},{w:"안",m:"不"},{w:"돼요",m:"可以（禁止）"}]},
+     {k:"한국에서는 그릇을 들면 안 돼요.", c:"在韓國不能端起碗。",
+      w:[{w:"한국",m:"韓國"},{w:"에서는",m:"〔場所+主題〕"},{w:"그릇",m:"碗"},{w:"을",m:"〔受詞〕"},{w:"들면",m:"拿起的話"},{w:"안",m:"不"},{w:"돼요",m:"可以（禁止）"}]},
+    ]
+   },
+  ],
+ },
+];
+
+/* ================================================================
+   Utilities
+   ================================================================ */
+function shuffle(a) {
+  const b = [...a];
+  for (let i = b.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [b[i], b[j]] = [b[j], b[i]];
+  }
+  return b;
+}
+
+// Build 4 choices for a sentence question
+const GLOBAL_ENDINGS = ["아요","어요","이에요","예요","세요","에","으러","러","워요","었어요","고 싶어요","는","은","다","요","여요"];
+function buildSentChoices(correct, allAnswers) {
+  const pool = [...new Set(allAnswers.filter(a => a !== correct))];
+  let wrong = shuffle(pool).slice(0, 3);
+  if (wrong.length < 3) {
+    const extra = shuffle(GLOBAL_ENDINGS.filter(e => e !== correct && !wrong.includes(e)));
+    wrong = [...wrong, ...extra].slice(0, 3);
+  }
+  return shuffle([correct, ...wrong]);
+}
+
+/* ================================================================
+   WordByWord — 逐字翻譯彩色 chips
+   ================================================================ */
+function WordByWord({ words }) {
+  return (
+    <div className="flex flex-wrap gap-1.5 justify-center">
+      {words.map((item, i) => {
+        const isParticle = /〔/.test(item.m);
+        const isPred = /요$|다$|ㄹ$/.test(item.w) && !isParticle;
+        const bg = isParticle ? "bg-orange-100 border-orange-300 text-orange-800"
+                 : isPred    ? "bg-purple-100 border-purple-300 text-purple-800"
+                             : "bg-sky-100 border-sky-300 text-sky-800";
+        return (
+          <div key={i} className={`flex flex-col items-center border rounded-lg px-2 py-1 text-center ${bg}`}>
+            <span className="font-bold text-sm leading-tight">{item.w}</span>
+            <span className="text-xs opacity-80 leading-tight">{item.m}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ================================================================
+   StudyView — 文法講義頁面
+   ================================================================ */
+function StudyView({ lesson, onBack, onQuiz }) {
+  return (
+    <div className="min-h-screen bg-slate-50">
+      {/* Top bar */}
+      <div className="bg-white border-b border-slate-100 px-4 py-3 flex items-center gap-3 sticky top-0 z-10 no-print">
+        <button onClick={onBack} className="text-slate-400 hover:text-slate-600 text-sm">✕ 返回</button>
+        <div className="flex-1">
+          <span className="font-bold text-slate-700">{lesson.title}</span>
+          <span className="text-slate-400 text-sm ml-2">{lesson.subtitle}</span>
+        </div>
+        <button onClick={() => window.print()}
+          className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-lg transition-colors">
+          🖨️ 列印
+        </button>
+      </div>
+
+      <div className="max-w-xl mx-auto px-4 py-6 space-y-6">
+        {/* 課程標題（列印用） */}
+        <div className="hidden print:block text-center mb-6">
+          <div className="text-2xl font-black">{lesson.title} {lesson.subtitle}</div>
+          <div className="text-slate-500">{lesson.desc}</div>
+        </div>
+
+        {/* 文法卡片 */}
+        {(lesson.grammar || []).map((g, gi) => (
+          <div key={gi} className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            {/* 卡片標題 */}
+            <div className="bg-gradient-to-r from-indigo-500 to-purple-500 px-5 py-3 text-white">
+              <div className="flex items-center gap-2">
+                <span className="font-black text-lg">{g.name}</span>
+                <span className="bg-white/20 text-xs px-2 py-0.5 rounded-full">{g.tag}</span>
+              </div>
+            </div>
+
+            <div className="p-5 space-y-4">
+              {/* 說明 */}
+              <p className="text-slate-600 text-sm leading-relaxed">{g.exp}</p>
+
+              {/* 規則 */}
+              {g.rules && g.rules.length > 0 && (
+                <div className="bg-amber-50 rounded-xl px-4 py-3 space-y-1">
+                  {g.rules.map((r, ri) => (
+                    <div key={ri} className="flex gap-2 text-sm text-amber-800">
+                      <span className="text-amber-400 shrink-0">▸</span>
+                      <span>{r}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* 例句 */}
+              <div className="space-y-4">
+                {g.ex.map((e, ei) => (
+                  <div key={ei} className="bg-slate-50 rounded-xl p-4 space-y-2">
+                    <div className="text-base font-bold text-slate-800">{e.k}</div>
+                    <div className="text-sm text-slate-500">{e.c}</div>
+                    {e.w && e.w.length > 0 && <WordByWord words={e.w} />}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ))}
+
+        {/* 前往練習按鈕 */}
+        <div className="flex gap-3 no-print pb-8">
+          <button onClick={() => onQuiz("vocab")}
+            className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-bold rounded-2xl py-3 shadow hover:shadow-md transition-all btn-pop">
+            📝 單字測驗
+          </button>
+          <button onClick={() => onQuiz("sentence")}
+            className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-2xl py-3 shadow hover:shadow-md transition-all btn-pop">
+            ✏️ 句子填空
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ================================================================
+   App
+   ================================================================ */
+function App() {
+  const [view, setView] = React.useState("home");
+  const [lesson, setLesson] = React.useState(null);
+  const [mode, setMode] = React.useState(null);
+  const [questions, setQuestions] = React.useState([]);
+  const [idx, setIdx] = React.useState(0);
+  const [score, setScore] = React.useState(0);
+  const [chosen, setChosen] = React.useState(null); // chosen answer string
+
+  const startQuiz = (l, m) => {
+    setLesson(l); setMode(m);
+    const allAnswers = l.sentences.map(s => s.answer);
+    let qs;
+    if (m === "vocab") {
+      qs = shuffle(l.vocab).map(item => {
+        const wrong = shuffle(l.vocab.filter(v => v.korean !== item.korean)).slice(0, 3);
+        return { type:"vocab", prompt: item.chinese, answer: item.korean, ex: item.ex, choices: shuffle([item, ...wrong]) };
+      });
+    } else {
+      qs = shuffle(l.sentences).map(s => ({
+        type:"sentence", ...s, choices: buildSentChoices(s.answer, allAnswers)
+      }));
+    }
+    setQuestions(qs); setIdx(0); setScore(0); setChosen(null);
+    setView("quiz");
+  };
+
+  const startStudy = (l) => { setLesson(l); setView("study"); };
+
+  const handleChoose = (ans) => {
+    if (chosen !== null) return;
+    setChosen(ans);
+    if (ans === questions[idx].answer) setScore(s => s + 1);
+  };
+
+  const handleNext = () => {
+    if (idx + 1 >= questions.length) { setView("result"); }
+    else { setIdx(i => i + 1); setChosen(null); }
+  };
+
+  if (view === "home") return <HomeView onSelect={(l,m) => startQuiz(l,m)} onStudy={startStudy} />;
+  if (view === "study") return (
+    <StudyView
+      lesson={lesson}
+      onBack={() => setView("home")}
+      onQuiz={(m) => startQuiz(lesson, m)}
+    />
+  );
+  if (view === "quiz") return (
+    <QuizView
+      lesson={lesson} questions={questions} idx={idx} score={score}
+      chosen={chosen} onChoose={handleChoose} onNext={handleNext}
+      onBack={() => { setView("home"); setChosen(null); }}
+    />
+  );
+  if (view === "result") return (
+    <ResultView
+      lesson={lesson} mode={mode} score={score} total={questions.length}
+      onRetry={() => startQuiz(lesson, mode)}
+      onHome={() => setView("home")}
+    />
+  );
+}
+
+/* ================================================================
+   HomeView — 課程卡片列表
+   ================================================================ */
+function HomeView({ onSelect, onStudy }) {
+  const [activeModes, setActiveModes] = React.useState({});
+  const toggle = (id) => setActiveModes(p => ({ ...p, [id]: p[id] === "vocab" ? "sentence" : p[id] === "sentence" ? null : "vocab" }));
+
+  const totalVocab = LESSONS.reduce((a,l) => a + l.vocab.length, 0);
+  const totalSent  = LESSONS.reduce((a,l) => a + l.sentences.length, 0);
+
+  return (
+    <div className="min-h-screen bg-slate-50">
+      <div className="max-w-xl mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="text-4xl font-black text-slate-800 tracking-tight">한국어 연습</div>
+          <div className="text-slate-400 mt-1 text-sm">選擇課程，開始練習</div>
+          <div className="flex justify-center gap-4 mt-3 text-xs text-slate-400">
+            <span>📚 {LESSONS.length} 課</span>
+            <span>🔤 {totalVocab} 個單字</span>
+            <span>✏️ {totalSent} 個句子</span>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          {LESSONS.map(l => (
+            <div key={l.id} className="bg-white rounded-2xl shadow-sm overflow-hidden border border-slate-100">
+              <div className={`bg-gradient-to-r ${l.color} p-4 text-white`}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-bold text-lg leading-tight">{l.title}</div>
+                    <div className="text-sm opacity-90">{l.subtitle}</div>
+                    <div className="text-xs opacity-70 mt-0.5">{l.desc}</div>
+                  </div>
+                  <div className="text-xs opacity-80 text-right">
+                    <div className="bg-white/20 rounded-lg px-2 py-0.5 mb-1">단어 {l.vocab.length}</div>
+                    <div className="bg-white/20 rounded-lg px-2 py-0.5">문장 {l.sentences.length}</div>
+                  </div>
+                </div>
+              </div>
+              <div className="p-3 flex gap-2">
+                <button
+                  onClick={() => onStudy(l)}
+                  className="flex-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-semibold text-sm rounded-xl py-2 transition-colors"
+                >
+                  📖 學習
+                </button>
+                <button
+                  onClick={() => onSelect(l, "vocab")}
+                  className="flex-1 bg-slate-100 hover:bg-blue-50 hover:text-blue-600 text-slate-600 font-semibold text-sm rounded-xl py-2 transition-colors"
+                >
+                  📝 單字
+                </button>
+                <button
+                  onClick={() => onSelect(l, "sentence")}
+                  className="flex-1 bg-slate-100 hover:bg-purple-50 hover:text-purple-600 text-slate-600 font-semibold text-sm rounded-xl py-2 transition-colors"
+                >
+                  ✏️ 句子
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ================================================================
+   QuizView
+   ================================================================ */
+function QuizView({ lesson, questions, idx, score, chosen, onChoose, onNext, onBack }) {
+  const q = questions[idx];
+  const isCorrect = chosen === q.answer;
+  const pct = ((idx) / questions.length) * 100;
+
+  // Explanation content
+  let explainTitle = "";
+  let explainBody = null;
+  if (chosen !== null) {
+    if (q.type === "vocab") {
+      // Find the vocab item for the correct answer
+      const item = lesson.vocab.find(v => v.korean === q.answer);
+      explainTitle = `${q.answer} ＝ ${q.prompt}`;
+      explainBody = item?.ex ? (
+        <div>
+          <div className="text-xs text-slate-400 mb-1">例句</div>
+          <div className="text-slate-700 font-medium">{item.ex.split(" / ")[0]}</div>
+          <div className="text-slate-500 text-sm">{item.ex.split(" / ")[1]}</div>
+        </div>
+      ) : null;
+    } else {
+      const completed = q.sentence.replace("___", `[${q.answer}]`);
+      explainTitle = completed;
+      explainBody = (
+        <div className="space-y-1">
+          <div><span className="text-xs text-slate-400">翻譯　</span><span className="text-slate-700">{q.translation}</span></div>
+          <div><span className="text-xs text-slate-400">文法　</span><span className="text-slate-600 text-sm">{q.hint}</span></div>
+        </div>
+      );
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-50 flex flex-col">
+      {/* Top bar */}
+      <div className="bg-white border-b border-slate-100 px-4 py-3 flex items-center gap-3">
+        <button onClick={onBack} className="text-slate-400 hover:text-slate-600 text-sm">✕</button>
+        <div className="flex-1">
+          <div className="w-full bg-slate-100 rounded-full h-2">
+            <div className="h-2 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 transition-all duration-400"
+              style={{ width: `${pct}%` }} />
+          </div>
+        </div>
+        <div className="text-slate-500 text-sm font-medium whitespace-nowrap">{idx+1}/{questions.length}</div>
+      </div>
+
+      <div className="flex-1 flex flex-col max-w-lg mx-auto w-full px-4 py-6 gap-4">
+        {/* Score chip */}
+        <div className="flex justify-between items-center text-sm">
+          <span className="text-slate-400">{lesson.title} · {q.type === "vocab" ? "單字" : "句子"}</span>
+          <span className="bg-white border border-slate-200 rounded-full px-3 py-0.5 text-slate-600 font-semibold">
+            ⭐ {score} 分
+          </span>
+        </div>
+
+        {/* Question card */}
+        <div className="bg-white rounded-3xl shadow-sm p-6 fade-up" key={idx}>
+          {q.type === "vocab" ? (
+            <div className="text-center">
+              <div className="text-xs text-slate-400 mb-2 uppercase tracking-widest">中文 → 韓文</div>
+              <div className="text-5xl font-black text-slate-800 mb-1">{q.prompt}</div>
+            </div>
+          ) : (
+            <div className="text-center">
+              <div className="text-xs text-slate-400 mb-3 uppercase tracking-widest">選出正確的填空</div>
+              <div className="text-xl font-bold text-slate-800 leading-relaxed">
+                {q.sentence.split("___").map((part, i, arr) => (
+                  <span key={i}>
+                    {part}
+                    {i < arr.length - 1 && (
+                      <span className={`inline-block border-b-2 min-w-[3rem] mx-1 font-mono text-base transition-colors ${
+                        chosen ? (isCorrect ? "border-green-400 text-green-600" : "border-red-400 text-red-500") : "border-blue-300 text-transparent"
+                      }`}>
+                        {chosen ? q.answer : "　　"}
+                      </span>
+                    )}
+                  </span>
+                ))}
+              </div>
+              <div className="mt-3 text-sm text-slate-400 bg-slate-50 rounded-lg px-3 py-1.5 inline-block">
+                {q.translation}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Choices */}
+        <div className="grid grid-cols-2 gap-3">
+          {q.choices.map((c, i) => {
+            const val = q.type === "vocab" ? c.korean : c;
+            const label = q.type === "vocab" ? c.korean : c;
+            let cls = "bg-white border-2 border-slate-200 text-slate-700 hover:border-blue-300 hover:bg-blue-50";
+            if (chosen !== null) {
+              if (val === q.answer) cls = "bg-green-50 border-2 border-green-400 text-green-700 font-bold";
+              else if (val === chosen) cls = "bg-red-50 border-2 border-red-400 text-red-600";
+              else cls = "bg-slate-50 border-2 border-slate-100 text-slate-400";
+            }
+            return (
+              <button key={i} onClick={() => onChoose(val)}
+                className={`rounded-2xl py-4 text-lg font-bold transition-all btn-pop ${cls}`}>
+                {label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Explanation panel */}
+        {chosen !== null && (
+          <div className={`rounded-2xl p-4 fade-up ${isCorrect ? "bg-green-50 border border-green-200" : "bg-red-50 border border-red-200"}`}>
+            <div className={`font-bold mb-2 ${isCorrect ? "text-green-700" : "text-red-600"}`}>
+              {isCorrect ? "✓ 正確！" : "✗ 答錯了"}
+            </div>
+            <div className={`text-sm font-semibold mb-2 ${isCorrect ? "text-green-800" : "text-slate-700"}`}>
+              {explainTitle}
+            </div>
+            {explainBody && <div className="text-sm">{explainBody}</div>}
+          </div>
+        )}
+
+        {/* Next button */}
+        {chosen !== null && (
+          <button onClick={onNext}
+            className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white font-bold rounded-2xl py-4 text-lg shadow hover:shadow-lg transition-all btn-pop fade-up">
+            {idx + 1 >= questions.length ? "查看結果 →" : "下一題 →"}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ================================================================
+   ResultView
+   ================================================================ */
+function ResultView({ lesson, mode, score, total, onRetry, onHome }) {
+  const pct = Math.round(score / total * 100);
+  const emoji = pct===100?"🎉":pct>=80?"😊":pct>=60?"🙂":"💪";
+  const msg   = pct===100?"完美！全對！":pct>=80?"很棒！繼續加油！":pct>=60?"不錯，再練一次！":"화이팅！繼續努力！";
+  return (
+    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center px-4 py-8">
+      <div className="max-w-sm w-full text-center fade-up">
+        <div className="text-6xl mb-4">{emoji}</div>
+        <div className="text-2xl font-black text-slate-800 mb-1">{msg}</div>
+        <div className="text-slate-400 text-sm mb-8">{lesson.title} · {mode==="vocab"?"單字測驗":"句子填空"}</div>
+        <div className="bg-white rounded-3xl shadow-sm p-8 mb-6">
+          <div className="text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-purple-500 mb-1">{pct}%</div>
+          <div className="text-slate-400">{score} / {total} 題正確</div>
+          <div className="mt-5 w-full bg-slate-100 rounded-full h-3">
+            <div className="h-3 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 transition-all"
+              style={{width:`${pct}%`}} />
+          </div>
+        </div>
+        <div className="space-y-3">
+          <button onClick={onRetry}
+            className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white font-bold rounded-2xl py-3 shadow hover:shadow-md transition-all btn-pop">
+            再練一次
+          </button>
+          <button onClick={onHome}
+            className="w-full bg-white border-2 border-slate-200 text-slate-600 font-bold rounded-2xl py-3 hover:border-blue-200 transition-all">
+            ← 返回課程列表
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
